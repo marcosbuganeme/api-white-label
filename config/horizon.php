@@ -17,7 +17,7 @@ return [
         Str::slug(env('APP_NAME', 'laravel'), '_').'_horizon:'
     ),
 
-    'middleware' => ['api', 'auth'],
+    'middleware' => ['web'],
 
     'allowed_emails' => env('HORIZON_ALLOWED_EMAILS', ''),
 
@@ -77,6 +77,7 @@ return [
                 'connection' => 'redis',
                 'queue' => ['logs'],
                 'balance' => 'auto',
+                'autoScalingStrategy' => 'time',
                 'minProcesses' => 1,
                 'maxProcesses' => 2,
                 'tries' => 3,
@@ -87,6 +88,7 @@ return [
                 'connection' => 'redis',
                 'queue' => ['metrics'],
                 'balance' => 'auto',
+                'autoScalingStrategy' => 'time',
                 'minProcesses' => 1,
                 'maxProcesses' => 2,
                 'tries' => 3,
