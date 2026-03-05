@@ -5,6 +5,8 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 10
+    commit-message:
+      prefix: "deps"
     groups:
       laravel:
         patterns: ["laravel/*"]
@@ -14,9 +16,21 @@ updates:
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    commit-message:
+      prefix: "ci"
 
   - package-ecosystem: "docker"
     directory: "/docker/app"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
+    commit-message:
+      prefix: "docker"
+
+  - package-ecosystem: "docker"
+    directory: "/docker/nginx"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "docker"

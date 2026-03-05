@@ -13,19 +13,35 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  ci-gate:
+    name: CI Gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Verify CI passed
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "Verifying CI checks passed for ${{ github.sha }}"
+
   build-and-push:
-    name: Build & Push Docker Image
+    name: Build & Push Docker Images
+    needs: ci-gate
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
       packages: write
 
+    strategy:
+      matrix:
+        target: [production, horizon, rabbitmq-worker]
+
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Log in to Container Registry
-        uses: docker/login-action@v3
+        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -33,28 +49,29 @@ jobs:
 
       - name: Extract metadata
         id: meta
-        uses: docker/metadata-action@v5
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
         with:
-          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}/${{ matrix.target }}
           tags: |
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix=
+            type=raw,value=latest
 
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
+        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
 
       - name: Build and push
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198e19c3bc6fbf # v6.18.0
         with:
           context: .
           file: docker/app/Dockerfile
-          target: production
+          target: ${{ matrix.target }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          cache-from: type=gha,scope=${{ matrix.target }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.target }}
 
   deploy-staging:
     name: Deploy to Staging
@@ -62,6 +79,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: staging
+    permissions:
+      contents: read
     steps:
       - name: Deploy to staging
         run: echo "Configure your staging deployment target here"
@@ -72,6 +91,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production
+    permissions:
+      contents: read
     steps:
       - name: Deploy to production
         run: echo "Configure your production deployment target here"

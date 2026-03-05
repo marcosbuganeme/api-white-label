@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  PHP_VERSION: '8.5.3'
+  PHP_VERSION: '8.5'
   PHP_EXTENSIONS: mbstring, xml, zip, bcmath, intl, pgsql, redis, mongodb, amqp, sockets, pcntl
 
 jobs:
@@ -23,21 +23,21 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@9e72090525849c5e8e0f66f42f4e8e4c3a64318a # v2.32.0
         with:
           php-version: ${{ env.PHP_VERSION }}
           extensions: ${{ env.PHP_EXTENSIONS }}
           coverage: none
 
       - name: Cache Composer
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: vendor
-          key: composer-${{ runner.os }}-php${{ env.PHP_VERSION }}-${{ hashFiles('composer.lock') }}
-          restore-keys: composer-${{ runner.os }}-php${{ env.PHP_VERSION }}-
+          key: composer-noscripts-${{ runner.os }}-php${{ env.PHP_VERSION }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-noscripts-${{ runner.os }}-php${{ env.PHP_VERSION }}-
 
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --no-scripts --optimize-autoloader
@@ -50,17 +50,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@9e72090525849c5e8e0f66f42f4e8e4c3a64318a # v2.32.0
         with:
           php-version: ${{ env.PHP_VERSION }}
           extensions: ${{ env.PHP_EXTENSIONS }}
           coverage: none
 
       - name: Cache Composer
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: vendor
           key: composer-${{ runner.os }}-php${{ env.PHP_VERSION }}-${{ hashFiles('composer.lock') }}
@@ -70,7 +70,7 @@ jobs:
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Run PHPStan
-        run: vendor/bin/phpstan analyse --no-progress
+        run: vendor/bin/phpstan analyse --no-progress --error-format=github --memory-limit=512M
 
   tests:
     name: Tests
@@ -97,23 +97,31 @@ jobs:
         ports:
           - 6379:6379
         options: >-
-          --health-cmd="redis-cli ping"
+          --entrypoint "redis-server --requirepass secret"
+          --health-cmd="redis-cli -a secret ping"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
 
       mongodb:
         image: mongo:8.0.19
+        env:
+          MONGO_INITDB_ROOT_USERNAME: maisvendas
+          MONGO_INITDB_ROOT_PASSWORD: secret
         ports:
           - 27017:27017
         options: >-
-          --health-cmd="mongosh --eval 'db.adminCommand({ping:1})'"
+          --health-cmd="mongosh -u maisvendas -p secret --authenticationDatabase admin --eval 'db.adminCommand({ping:1})'"
           --health-interval=10s
           --health-timeout=5s
           --health-retries=5
 
       rabbitmq:
         image: rabbitmq:4.2.4-management-alpine
+        env:
+          RABBITMQ_DEFAULT_USER: maisvendas
+          RABBITMQ_DEFAULT_PASS: secret
+          RABBITMQ_DEFAULT_VHOST: maisvendas
         ports:
           - 5672:5672
         options: >-
@@ -123,17 +131,17 @@ jobs:
           --health-retries=5
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@9e72090525849c5e8e0f66f42f4e8e4c3a64318a # v2.32.0
         with:
           php-version: ${{ env.PHP_VERSION }}
           extensions: ${{ env.PHP_EXTENSIONS }}
-          coverage: xdebug
+          coverage: pcov
 
       - name: Cache Composer
-        uses: actions/cache@v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: vendor
           key: composer-${{ runner.os }}-php${{ env.PHP_VERSION }}-${{ hashFiles('composer.lock') }}
@@ -159,10 +167,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Setup PHP
-        uses: shivammathur/setup-php@v2
+        uses: shivammathur/setup-php@9e72090525849c5e8e0f66f42f4e8e4c3a64318a # v2.32.0
         with:
           php-version: ${{ env.PHP_VERSION }}
           coverage: none
