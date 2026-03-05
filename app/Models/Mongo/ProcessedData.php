@@ -6,6 +6,8 @@ use MongoDB\Laravel\Eloquent\Model;
 
 class ProcessedData extends Model
 {
+    public $timestamps = false;
+
     protected $connection = 'mongodb';
     /** @var string */
     protected $collection = 'processed_data';
