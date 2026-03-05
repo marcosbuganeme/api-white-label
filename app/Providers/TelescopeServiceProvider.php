@@ -17,19 +17,6 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
 
         Telescope::night();
 
-        $this->hideSensitiveRequestDetails();
-
-        Telescope::filter(function (IncomingEntry $entry) {
-            return true;
-        });
-    }
-
-    protected function hideSensitiveRequestDetails(): void
-    {
-        if ($this->app->environment('local')) {
-            return;
-        }
-
         Telescope::hideRequestParameters(['_token']);
         Telescope::hideRequestHeaders([
             'cookie',
@@ -37,12 +24,16 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
             'x-xsrf-token',
             'authorization',
         ]);
+
+        Telescope::filter(function (IncomingEntry $entry) {
+            return true;
+        });
     }
 
     protected function gate(): void
     {
         Gate::define('viewTelescope', function ($user = null) {
-            return $this->app->environment('local') && $user !== null;
+            return $this->app->environment('local');
         });
     }
 }
