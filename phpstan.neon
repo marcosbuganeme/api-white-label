@@ -7,4 +7,6 @@ parameters:
 
     level: 8
 
+    phpVersion: 80503
+
     ignoreErrors: []

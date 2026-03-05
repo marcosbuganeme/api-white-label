@@ -11,11 +11,11 @@ help: ## Show available commands
 # ── Docker ──────────────────────────────────
 
 setup: ## First-time project setup (Docker)
-	cp -n .env.example .env || true
+	@[ -f .env ] || cp .env.example .env
 	docker compose build
 	docker compose up -d
 	docker compose exec app composer install
-	docker compose exec app php artisan key:generate
+	docker compose exec app bash -c 'grep -q "^APP_KEY=$$" .env && php artisan key:generate || echo "APP_KEY already set, skipping."'
 	docker compose exec app php artisan migrate
 	@echo "\n✅ Project ready!"
 	@echo "   API:      http://api.maisvendas.localhost"
@@ -105,7 +105,8 @@ horizon: ## Restart Horizon
 # ── Scaling ─────────────────────────────────
 
 scale-workers: ## Scale RabbitMQ workers (usage: make scale-workers N=5)
-	docker compose up -d --scale rabbitmq-worker=$(N) --no-recreate
+	@if [ -z "$(N)" ]; then echo "Usage: make scale-workers N=<number>"; exit 1; fi
+	docker compose up -d --scale rabbitmq-worker=$(N)
 
 # ── Local (without Docker) ──────────────────
 
@@ -142,7 +143,8 @@ prod-logs: ## Tail production logs
 	$(PROD_COMPOSE) logs -f --tail=100
 
 prod-scale-workers: ## Scale prod RabbitMQ workers (usage: make prod-scale-workers N=3)
-	$(PROD_COMPOSE) up -d --scale rabbitmq-worker=$(N) --no-recreate
+	@if [ -z "$(N)" ]; then echo "Usage: make prod-scale-workers N=<number>"; exit 1; fi
+	$(PROD_COMPOSE) up -d --scale rabbitmq-worker=$(N)
 
 prod-config: ## Validate merged production compose config
 	$(PROD_COMPOSE) config
