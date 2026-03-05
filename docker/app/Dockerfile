@@ -1,4 +1,4 @@
-FROM php:8.5-fpm-bookworm AS base
+FROM php:8.5.3-fpm-bookworm AS base
 
 LABEL maintainer="MaisVendas <dev@maisvendas.com>"
 
@@ -23,9 +23,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libcurl4-openssl-dev \
     libssl-dev \
     librabbitmq-dev \
+    libfcgi-bin \
+    procps \
     pkg-config \
     supervisor \
     && rm -rf /var/lib/apt/lists/*
+
+# php-fpm-healthcheck (pinned to v0.5.0)
+RUN curl -fsSL -o /usr/local/bin/php-fpm-healthcheck \
+    https://raw.githubusercontent.com/renatomefi/php-fpm-healthcheck/v0.5.0/php-fpm-healthcheck \
+    && chmod +x /usr/local/bin/php-fpm-healthcheck
 
 # PHP extensions
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
@@ -45,7 +52,7 @@ RUN pecl install redis mongodb amqp \
     && docker-php-ext-enable redis mongodb amqp
 
 # Composer
-COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2.9.5 /usr/bin/composer /usr/bin/composer
 
 # Create app user
 RUN groupadd --force -g $WWWGROUP appuser \
@@ -64,10 +71,16 @@ FROM base AS development
 RUN pecl install xdebug && docker-php-ext-enable xdebug
 COPY docker/app/conf.d/xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
 
+# Layer caching: copy dependency files first
+COPY composer.json composer.lock ./
+RUN composer install --no-interaction --optimize-autoloader --no-scripts
+
 COPY . /var/www/html
-RUN chown -R appuser:appuser /var/www/html
+RUN composer run-script post-autoload-dump \
+    && chown -R appuser:appuser /var/www/html \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+
 USER appuser
-RUN composer install --no-interaction --optimize-autoloader
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD php-fpm-healthcheck || exit 1
@@ -83,20 +96,26 @@ FROM base AS production
 # Production-specific PHP config
 COPY docker/app/conf.d/php-prod.ini /usr/local/etc/php/conf.d/zz-prod.ini
 
-COPY . /var/www/html
-RUN chown -R appuser:appuser /var/www/html
-USER appuser
+# Layer caching: copy dependency files first
+COPY composer.json composer.lock ./
+RUN composer install --no-dev --no-interaction --optimize-autoloader --no-scripts
 
-RUN composer install --no-dev --no-interaction --optimize-autoloader \
-    && php artisan config:cache \
-    && php artisan event:cache \
-    && php artisan route:cache \
-    && php artisan view:cache
+COPY . /var/www/html
+RUN composer run-script post-autoload-dump \
+    && chown -R appuser:appuser /var/www/html \
+    && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Entrypoint for runtime caching (route, view, config, event)
+COPY docker/app/entrypoint.sh /usr/local/bin/entrypoint.sh
+RUN chmod +x /usr/local/bin/entrypoint.sh
+
+USER appuser
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD php-fpm-healthcheck || exit 1
 
 EXPOSE 9000
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["php-fpm"]
 
 # ─────────────────────────────────────────────
@@ -111,26 +130,15 @@ HEALTHCHECK --interval=60s --timeout=10s --start-period=15s --retries=3 \
 CMD ["php", "artisan", "horizon"]
 
 # ─────────────────────────────────────────────
-# Scheduler (cron)
-# ─────────────────────────────────────────────
-FROM production AS scheduler
-
-USER root
-COPY docker/app/scheduler/crontab /etc/cron.d/laravel-scheduler
-RUN chmod 0644 /etc/cron.d/laravel-scheduler \
-    && crontab -u appuser /etc/cron.d/laravel-scheduler
-
-CMD ["cron", "-f"]
-
-# ─────────────────────────────────────────────
 # RabbitMQ Worker (heavy processing)
 # ─────────────────────────────────────────────
 FROM production AS rabbitmq-worker
 
 USER appuser
-CMD ["php", "artisan", "rabbitmq:consume", \
-     "--queue=processing", \
-     "--max-memory=256", \
-     "--sleep=3", \
+CMD ["php", "artisan", "queue:work", "rabbitmq", \
+     "--queue=processing,data_crossref,reports", \
+     "--max-jobs=1000", \
+     "--max-time=3600", \
+     "--memory=256", \
      "--tries=3", \
-     "--max-time=3600"]
+     "--sleep=3"]
