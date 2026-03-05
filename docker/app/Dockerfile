@@ -30,11 +30,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # php-fpm-healthcheck (pinned to v0.5.0)
-RUN curl -fsSL -o /usr/local/bin/php-fpm-healthcheck \
-    https://raw.githubusercontent.com/renatomefi/php-fpm-healthcheck/v0.5.0/php-fpm-healthcheck \
-    && chmod +x /usr/local/bin/php-fpm-healthcheck
+COPY docker/app/scripts/php-fpm-healthcheck /usr/local/bin/php-fpm-healthcheck
+RUN chmod +x /usr/local/bin/php-fpm-healthcheck
 
-# PHP extensions
+# PHP extensions (opcache is built-in since PHP 8.5 - do not install separately)
 RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j$(nproc) \
         pdo_pgsql \
@@ -43,12 +42,11 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         intl \
         gd \
         bcmath \
-        opcache \
         pcntl \
         sockets
 
-# PECL extensions
-RUN pecl install redis mongodb amqp \
+# PECL extensions (pinned versions for reproducible builds, PHP 8.5 compatible)
+RUN pecl install redis-6.3.0 mongodb-2.2.1 amqp-2.2.0 \
     && docker-php-ext-enable redis mongodb amqp
 
 # Composer
