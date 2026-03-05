@@ -63,8 +63,8 @@ jobs:
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: vendor
-          key: composer-${{ runner.os }}-php${{ env.PHP_VERSION }}-${{ hashFiles('composer.lock') }}
-          restore-keys: composer-${{ runner.os }}-php${{ env.PHP_VERSION }}-
+          key: composer-withscripts-${{ runner.os }}-php${{ env.PHP_VERSION }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-withscripts-${{ runner.os }}-php${{ env.PHP_VERSION }}-
 
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
@@ -144,8 +144,8 @@ jobs:
         uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
         with:
           path: vendor
-          key: composer-${{ runner.os }}-php${{ env.PHP_VERSION }}-${{ hashFiles('composer.lock') }}
-          restore-keys: composer-${{ runner.os }}-php${{ env.PHP_VERSION }}-
+          key: composer-withscripts-${{ runner.os }}-php${{ env.PHP_VERSION }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-withscripts-${{ runner.os }}-php${{ env.PHP_VERSION }}-
 
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
@@ -157,6 +157,7 @@ jobs:
         run: php artisan key:generate
 
       - name: Run migrations
+        timeout-minutes: 2
         run: php artisan migrate --force
 
       - name: Run tests
@@ -175,8 +176,5 @@ jobs:
           php-version: ${{ env.PHP_VERSION }}
           coverage: none
 
-      - name: Install dependencies
-        run: composer install --no-dev --no-interaction --prefer-dist --no-scripts
-
       - name: Security audit
-        run: composer audit
+        run: composer audit --locked
