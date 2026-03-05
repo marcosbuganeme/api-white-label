@@ -1,17 +1,18 @@
 # Traefik Static Configuration
 api:
   dashboard: true
-  insecure: true  # Only for development! Disable in production.
+  insecure: false
 
 entryPoints:
   web:
     address: ":80"
-    http:
-      redirections:
-        entryPoint:
-          to: websecure
-          scheme: https
-          permanent: true
+    # HTTP→HTTPS redirect: enable only in production (breaks ACME HTTP-01 in dev)
+    # http:
+    #   redirections:
+    #     entryPoint:
+    #       to: websecure
+    #       scheme: https
+    #       permanent: true
   websecure:
     address: ":443"
 

@@ -13,7 +13,6 @@ http:
       headers:
         browserXssFilter: true
         contentTypeNosniff: true
-        frameDeny: true
         stsIncludeSubdomains: true
         stsPreload: true
         stsSeconds: 31536000
@@ -27,12 +26,6 @@ http:
       compress:
         excludedContentTypes:
           - "text/event-stream"
-
-    # Retry on failure
-    retry:
-      retry:
-        attempts: 3
-        initialInterval: 100ms
 
     # Chain of middlewares for API
     api-chain:
