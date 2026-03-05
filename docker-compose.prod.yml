@@ -1,0 +1,190 @@
+###############################################################################
+# API MaisVendas - Docker Compose Production Override
+#
+# Uso:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+#   make prod-up
+#
+# Otimizado para: 4GB RAM / 2 vCPU (budget total: ~2,880M / 3.0 CPU)
+###############################################################################
+
+services:
+  # ──────────────────────────────────────────────
+  # EDGE PROXY - Traefik
+  # ──────────────────────────────────────────────
+  traefik:
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.15'
+
+  # ──────────────────────────────────────────────
+  # WEB SERVER - Nginx
+  # ──────────────────────────────────────────────
+  nginx:
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.15'
+
+  # ──────────────────────────────────────────────
+  # APPLICATION - PHP-FPM
+  # ──────────────────────────────────────────────
+  app:
+    restart: always
+    environment:
+      DOCKER_TARGET: production
+      PHP_FPM_PM_MAX_CHILDREN: 5
+    volumes:
+      - .:/var/www/html
+      - ./docker/app/conf.d/php-fpm-prod.conf:/usr/local/etc/php-fpm.d/zz-prod.conf:ro
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.75'
+
+  # ──────────────────────────────────────────────
+  # HORIZON - Redis Queue Manager
+  # ──────────────────────────────────────────────
+  horizon:
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      DOCKER_TARGET: production
+    deploy:
+      resources:
+        limits:
+          memory: 192M
+          cpus: '0.30'
+
+  # ──────────────────────────────────────────────
+  # RABBITMQ WORKER - Heavy Processing
+  # ──────────────────────────────────────────────
+  rabbitmq-worker:
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    command: >
+      php artisan queue:work rabbitmq
+      --queue=processing,data_crossref,reports
+      --max-jobs=1000
+      --max-time=3600
+      --memory=128
+      --tries=3
+      --sleep=3
+    environment:
+      DOCKER_TARGET: production
+    deploy:
+      resources:
+        limits:
+          memory: 192M
+          cpus: '0.30'
+
+  # ──────────────────────────────────────────────
+  # SCHEDULER - Laravel Schedule
+  # ──────────────────────────────────────────────
+  scheduler:
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      DOCKER_TARGET: production
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.10'
+
+  # ──────────────────────────────────────────────
+  # PostgreSQL - Optimized for 640M limit
+  # ──────────────────────────────────────────────
+  postgres:
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    ports: !reset []
+    command: >
+      postgres
+        -c shared_buffers=128MB
+        -c effective_cache_size=384MB
+        -c work_mem=4MB
+        -c maintenance_work_mem=64MB
+        -c max_connections=50
+        -c log_min_duration_statement=200
+        -c log_checkpoints=on
+        -c log_connections=on
+        -c log_disconnections=on
+    deploy:
+      resources:
+        limits:
+          memory: 640M
+          cpus: '0.50'
+
+  # ──────────────────────────────────────────────
+  # Redis - Optimized for 256M limit
+  # ──────────────────────────────────────────────
+  redis:
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    ports: !reset []
+    command: >
+      redis-server
+        --appendonly yes
+        --maxmemory 192mb
+        --maxmemory-policy allkeys-lru
+        --tcp-backlog 511
+        --timeout 300
+        --tcp-keepalive 60
+        --save 60 1000
+        --save 300 100
+        --requirepass ${REDIS_PASSWORD:-secret}
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+          cpus: '0.15'
+
+  # ──────────────────────────────────────────────
+  # MongoDB - WiredTiger cache 256MB
+  # ──────────────────────────────────────────────
+  mongodb:
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    ports: !reset []
+    command: >
+      mongod
+        --wiredTigerCacheSizeGB 0.25
+        --auth
+        --bind_ip_all
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+          cpus: '0.30'
+
+  # ──────────────────────────────────────────────
+  # RabbitMQ - Watermark 0.7
+  # ──────────────────────────────────────────────
+  rabbitmq:
+    restart: always
+    security_opt:
+      - no-new-privileges:true
+    ports: !override
+      - "127.0.0.1:${RABBITMQ_PORT:-5672}:5672"
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+          cpus: '0.25'
