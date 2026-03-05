@@ -57,7 +57,7 @@ class HealthCheckController extends Controller
 
             return ['status' => 'up', 'driver' => 'pgsql'];
         } catch (\Throwable $e) {
-            Log::warning('Health check failed for pgsql', ['error' => $e->getMessage()]);
+            Log::warning('Health check failed for pgsql', ['error' => class_basename($e).': '.$e->getCode()]);
 
             return ['status' => 'down', 'driver' => 'pgsql'];
         }
@@ -72,7 +72,7 @@ class HealthCheckController extends Controller
 
             return ['status' => 'up'];
         } catch (\Throwable $e) {
-            Log::warning('Health check failed for redis', ['error' => $e->getMessage()]);
+            Log::warning('Health check failed for redis', ['error' => class_basename($e).': '.$e->getCode()]);
 
             return ['status' => 'down'];
         }
@@ -84,17 +84,12 @@ class HealthCheckController extends Controller
         try {
             /** @var \MongoDB\Laravel\Connection $connection */
             $connection = DB::connection('mongodb');
-            $client = $connection->getClient();
 
-            if ($client === null) {
-                return ['status' => 'down'];
-            }
-
-            $client->listDatabases();
+            $connection->getMongoDB()->command(['ping' => 1]);
 
             return ['status' => 'up'];
         } catch (\Throwable $e) {
-            Log::warning('Health check failed for mongodb', ['error' => $e->getMessage()]);
+            Log::warning('Health check failed for mongodb', ['error' => class_basename($e).': '.$e->getCode()]);
 
             return ['status' => 'down'];
         }
@@ -105,7 +100,11 @@ class HealthCheckController extends Controller
     {
         try {
             /** @var array<string, string> $cached */
-            $cached = Cache::remember('health:rabbitmq', 15, fn (): array => $this->probeRabbitMQ());
+            $cached = Cache::remember('health:rabbitmq', 10, fn (): array => $this->probeRabbitMQ());
+
+            if ($cached['status'] === 'down') {
+                Cache::forget('health:rabbitmq');
+            }
 
             return $cached;
         } catch (\Throwable) {
@@ -123,7 +122,7 @@ class HealthCheckController extends Controller
                 host: (string) config('queue.connections.rabbitmq.hosts.0.host', 'rabbitmq'),
                 port: (int) config('queue.connections.rabbitmq.hosts.0.port', 5672),
                 user: (string) config('queue.connections.rabbitmq.hosts.0.user', 'maisvendas'),
-                password: (string) config('queue.connections.rabbitmq.hosts.0.password', 'secret'),
+                password: (string) config('queue.connections.rabbitmq.hosts.0.password', ''),
                 vhost: (string) config('queue.connections.rabbitmq.hosts.0.vhost', 'maisvendas'),
                 connection_timeout: 3,
                 read_write_timeout: 3,
@@ -133,7 +132,7 @@ class HealthCheckController extends Controller
 
             return ['status' => 'up'];
         } catch (\Throwable $e) {
-            Log::warning('Health check failed for rabbitmq', ['error' => $e->getMessage()]);
+            Log::warning('Health check failed for rabbitmq', ['error' => class_basename($e).': '.$e->getCode()]);
 
             return ['status' => 'down'];
         } finally {

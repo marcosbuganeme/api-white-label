@@ -12,6 +12,8 @@ class MongoDBHandler extends AbstractProcessingHandler
 
     private static bool $writing = false;
 
+    private static int $writeAttempts = 0;
+
     public function __construct(
         Level $level = Level::Debug,
         bool $bubble = true,
@@ -26,7 +28,14 @@ class MongoDBHandler extends AbstractProcessingHandler
             return;
         }
 
+        // Safety: reset flag if stuck from a previous abnormal termination
+        if (self::$writeAttempts > 100) {
+            self::$writeAttempts = 0;
+            self::$writing = false;
+        }
+
         self::$writing = true;
+        self::$writeAttempts++;
 
         try {
             /** @var \MongoDB\Laravel\Connection $connection */
@@ -46,6 +55,8 @@ class MongoDBHandler extends AbstractProcessingHandler
                     ),
                     'environment' => app()->environment(),
                 ]);
+
+            self::$writeAttempts = 0;
         } catch (\Throwable) {
             // Silently fail - logging should never break the application.
             // If MongoDB is down, daily file log still captures everything via stack channel.
@@ -76,7 +87,7 @@ class MongoDBHandler extends AbstractProcessingHandler
                     return;
                 }
                 if ($value instanceof \Stringable) {
-                    $value = $value->__toString();
+                    $value = (string) $value;
                 } else {
                     $value = get_class($value);
                 }

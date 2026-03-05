@@ -13,13 +13,14 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->throttleWithRedis('api');
+
+        $proxies = env('TRUSTED_PROXIES', '172.16.0.0/12');
         $middleware->trustProxies(
-            at: explode(',', env('TRUSTED_PROXIES', '172.16.0.0/12')),
+            at: $proxies === '*' ? '*' : array_filter(explode(',', $proxies)),
             headers: Request::HEADER_X_FORWARDED_FOR
                 | Request::HEADER_X_FORWARDED_HOST
                 | Request::HEADER_X_FORWARDED_PORT
-                | Request::HEADER_X_FORWARDED_PROTO
-                | Request::HEADER_X_FORWARDED_AWS_ELB,
+                | Request::HEADER_X_FORWARDED_PROTO,
         );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
