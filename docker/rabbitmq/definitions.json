@@ -2,6 +2,15 @@
   "vhosts": [
     {"name": "maisvendas"}
   ],
+  "permissions": [
+    {
+      "user": "maisvendas",
+      "vhost": "maisvendas",
+      "configure": ".*",
+      "write": ".*",
+      "read": ".*"
+    }
+  ],
   "exchanges": [
     {
       "name": "maisvendas.processing",
@@ -28,7 +37,8 @@
         "x-dead-letter-exchange": "maisvendas.dlx",
         "x-dead-letter-routing-key": "processing.failed",
         "x-message-ttl": 86400000,
-        "x-max-priority": 10
+        "x-max-priority": 10,
+        "x-max-length-bytes": 104857600
       }
     },
     {
@@ -40,7 +50,8 @@
         "x-dead-letter-exchange": "maisvendas.dlx",
         "x-dead-letter-routing-key": "data_crossref.failed",
         "x-message-ttl": 86400000,
-        "x-max-priority": 10
+        "x-max-priority": 10,
+        "x-max-length-bytes": 104857600
       }
     },
     {
@@ -52,7 +63,8 @@
         "x-dead-letter-exchange": "maisvendas.dlx",
         "x-dead-letter-routing-key": "reports.failed",
         "x-message-ttl": 172800000,
-        "x-max-priority": 5
+        "x-max-priority": 5,
+        "x-max-length-bytes": 104857600
       }
     },
     {
