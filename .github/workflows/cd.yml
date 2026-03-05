@@ -21,8 +21,17 @@ jobs:
       - name: Verify CI passed
         env:
           GH_TOKEN: ${{ github.token }}
+          COMMIT_SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
         run: |
-          echo "Verifying CI checks passed for ${{ github.sha }}"
+          echo "Verifying CI checks passed for $COMMIT_SHA"
+          CONCLUSION=$(gh api "repos/$REPO/commits/$COMMIT_SHA/check-runs" \
+            --jq '[.check_runs[] | select(.name != "CI Gate") | .conclusion] | unique')
+          echo "Check conclusions: $CONCLUSION"
+          if [ "$CONCLUSION" != '["success"]' ]; then
+            echo "::error::CI checks did not all pass: $CONCLUSION"
+            exit 1
+          fi
 
   build-and-push:
     name: Build & Push Docker Images
@@ -56,7 +65,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix=
-            type=raw,value=latest
+            type=raw,value=latest,enable=${{ !contains(github.ref_name, '-') }}
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
@@ -72,6 +81,8 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=${{ matrix.target }}
           cache-to: type=gha,mode=max,scope=${{ matrix.target }}
+          provenance: true
+          sbom: true
 
   deploy-staging:
     name: Deploy to Staging
@@ -83,7 +94,10 @@ jobs:
       contents: read
     steps:
       - name: Deploy to staging
-        run: echo "Configure your staging deployment target here"
+        run: |
+          echo "::error::Staging deployment not configured yet"
+          exit 1
+          # TODO: Configure your staging deployment target here
 
   deploy-production:
     name: Deploy to Production
@@ -95,4 +109,7 @@ jobs:
       contents: read
     steps:
       - name: Deploy to production
-        run: echo "Configure your production deployment target here"
+        run: |
+          echo "::error::Production deployment not configured yet"
+          exit 1
+          # TODO: Configure your production deployment target here
