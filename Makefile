@@ -81,7 +81,8 @@ migrate-fresh: ## Drop all tables and re-run migrations
 seed: ## Run database seeders
 	docker compose exec app php artisan db:seed
 
-fresh: ## Fresh migration + seed
+fresh: ## Fresh migration + seed (DEV ONLY - drops all tables!)
+	@echo "WARNING: This will DROP ALL tables and re-seed. Continue? [y/N] " && read ans && [ "$${ans:-N}" = y ]
 	docker compose exec app php artisan migrate:fresh --seed
 
 # ── Cache & Queue ───────────────────────────
