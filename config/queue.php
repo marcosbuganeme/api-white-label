@@ -43,7 +43,7 @@ return [
                     'host' => env('RABBITMQ_HOST', 'rabbitmq'),
                     'port' => (int) env('RABBITMQ_PORT', 5672),
                     'user' => env('RABBITMQ_USER', 'maisvendas'),
-                    'password' => env('RABBITMQ_PASSWORD', 'secret'),
+                    'password' => env('RABBITMQ_PASSWORD'),
                     'vhost' => env('RABBITMQ_VHOST', 'maisvendas'),
                 ],
             ],
@@ -80,16 +80,6 @@ return [
 
         'deferred' => [
             'driver' => 'deferred',
-        ],
-
-        // ── Failover: fallback automático se Redis cair ──
-        'failover' => [
-            'driver' => 'failover',
-            'connections' => [
-                'redis',
-                'database',
-                'sync',
-            ],
         ],
 
     ],
