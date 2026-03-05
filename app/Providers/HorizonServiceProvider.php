@@ -35,7 +35,7 @@ class HorizonServiceProvider extends HorizonApplicationServiceProvider
             /** @var string $allowed */
             $allowed = config('horizon.allowed_emails', '');
 
-            return filled($allowed) && in_array($user->email, explode(',', $allowed));
+            return filled($allowed) && in_array($user->email, array_map('trim', explode(',', $allowed)), true);
         });
     }
 }
