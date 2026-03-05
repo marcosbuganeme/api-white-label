@@ -61,9 +61,19 @@ class BackupMongoDBCommand extends Command
             }
 
             $disk = Storage::disk('backups');
-            $disk->put($remotePath, (string) file_get_contents($tempFile));
+            $stream = fopen($tempFile, 'r');
 
-            $size = round(filesize($tempFile) / 1024 / 1024, 2);
+            if ($stream === false) {
+                $this->error('Falha ao abrir arquivo temporário para upload.');
+                Log::error('Backup MongoDB falhou: não foi possível abrir o arquivo temp');
+
+                return self::FAILURE;
+            }
+
+            $disk->put($remotePath, $stream);
+            fclose($stream);
+
+            $size = round((int) filesize($tempFile) / 1024 / 1024, 2);
 
             $this->info("Backup enviado com sucesso: {$remotePath} ({$size} MB)");
             Log::info('Backup MongoDB concluído', [

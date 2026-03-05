@@ -71,7 +71,17 @@ class BackupPostgreSQLCommand extends Command
             }
 
             $disk = Storage::disk('backups');
-            $disk->put($remotePath, (string) file_get_contents($tempFile));
+            $stream = fopen($tempFile, 'r');
+
+            if ($stream === false) {
+                $this->error('Falha ao abrir arquivo temporário para upload.');
+                Log::error('Backup PostgreSQL falhou: não foi possível abrir o arquivo temp');
+
+                return self::FAILURE;
+            }
+
+            $disk->put($remotePath, $stream);
+            fclose($stream);
 
             $size = round((int) filesize($tempFile) / 1024 / 1024, 2);
 

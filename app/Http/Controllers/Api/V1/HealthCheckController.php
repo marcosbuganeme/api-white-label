@@ -123,16 +123,16 @@ class HealthCheckController extends Controller
     private function checkStorage(): array
     {
         try {
-            $disk = Storage::disk('spaces');
+            $disk = Storage::disk('backups');
             $testKey = '.health-check-'.bin2hex(random_bytes(4));
             $disk->put($testKey, 'ok');
             $disk->delete($testKey);
 
-            return ['status' => 'up', 'disk' => 'spaces'];
+            return ['status' => 'up', 'disk' => 'backups'];
         } catch (\Throwable $e) {
             Log::warning('Health check failed for storage', ['error' => class_basename($e).': '.$e->getCode()]);
 
-            return ['status' => 'down', 'disk' => 'spaces'];
+            return ['status' => 'down', 'disk' => 'backups'];
         }
     }
 
