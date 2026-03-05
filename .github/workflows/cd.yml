@@ -4,6 +4,9 @@ on:
   push:
     tags: ['v*']
 
+permissions:
+  contents: read
+
 concurrency:
   group: cd-${{ github.ref }}
   cancel-in-progress: false
@@ -17,6 +20,9 @@ jobs:
     name: CI Gate
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
     steps:
       - name: Wait for CI and verify it passed
         env:
@@ -29,7 +35,18 @@ jobs:
           # Retry up to 30 times (5 min) waiting for checks to finish
           for i in $(seq 1 30); do
             RESULT=$(gh api "repos/$REPO/commits/$COMMIT_SHA/check-runs" \
-              --jq '[.check_runs[] | select(.app.slug == "github-actions" and .name != "CI Gate" and .name != "Wait for CI and verify it passed") | {name: .name, conclusion: .conclusion, status: .status, completed_at: .completed_at}] | group_by(.name) | map(sort_by(.completed_at // "9999") | last)')
+              --jq '.check_runs | map(select(.name != "ci-gate"))' 2>&1) || {
+              echo "::warning::gh api call failed: $RESULT"
+              sleep 10
+              continue
+            }
+
+            TOTAL=$(echo "$RESULT" | jq 'length')
+            if [ "$TOTAL" -eq 0 ]; then
+              echo "Attempt $i/30: no CI checks found yet, waiting 10s..."
+              sleep 10
+              continue
+            fi
 
             PENDING=$(echo "$RESULT" | jq '[.[] | select(.status != "completed")] | length')
             if [ "$PENDING" -gt 0 ]; then
@@ -61,6 +78,8 @@ jobs:
     permissions:
       contents: read
       packages: write
+      attestations: write
+      id-token: write
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -99,6 +118,21 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha,scope=production
           cache-to: type=gha,mode=max,scope=production
+          provenance: true
+          sbom: true
+
+      - name: Build and push nginx
+        uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f0b7a4 # v6.15.0
+        with:
+          context: .
+          file: docker/nginx/Dockerfile
+          push: true
+          tags: |
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-nginx:latest
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-nginx:${{ github.sha }}
+            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-nginx:${{ github.ref_name }}
+          cache-from: type=gha,scope=nginx
+          cache-to: type=gha,mode=max,scope=nginx
           provenance: true
           sbom: true
 

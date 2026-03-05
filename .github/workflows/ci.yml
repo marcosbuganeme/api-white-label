@@ -40,7 +40,7 @@ jobs:
           restore-keys: composer-noscripts-${{ runner.os }}-php${{ env.PHP_VERSION }}-
 
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist --no-scripts --optimize-autoloader
+        run: composer install --no-interaction --prefer-dist --no-scripts
 
       - name: Run Pint
         run: vendor/bin/pint --test
@@ -161,7 +161,15 @@ jobs:
         run: php artisan migrate --force
 
       - name: Run tests
-        run: php artisan test --coverage --min=80
+        run: php artisan test --coverage --min=80 --log-junit=storage/logs/junit.xml
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: test-results
+          path: storage/logs/junit.xml
+          retention-days: 14
 
   security:
     name: Security Audit
