@@ -3,6 +3,8 @@
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
+         failOnWarning="true"
+         failOnDeprecation="true"
 >
     <testsuites>
         <testsuite name="Unit">
@@ -24,7 +26,12 @@
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
         <env name="DB_CONNECTION" value="pgsql"/>
+        <env name="DB_HOST" value="127.0.0.1"/>
+        <env name="DB_PORT" value="5432"/>
         <env name="DB_DATABASE" value="maisvendas_test"/>
+        <env name="DB_USERNAME" value="postgres"/>
+        <env name="DB_PASSWORD" value="secret"/>
+        <env name="MONGODB_URI" value="mongodb://127.0.0.1:27017"/>
         <env name="MONGODB_DATABASE" value="maisvendas_test_logs"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>

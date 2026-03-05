@@ -3,9 +3,7 @@
 .claude
 .idea
 .vscode
-.env
-.env.backup
-.env.production
+.env*
 node_modules
 vendor
 storage/logs/*
@@ -18,4 +16,5 @@ phpunit.xml
 pint.json
 *.md
 docker-compose.yml
+docker-compose.*.yml
 Makefile

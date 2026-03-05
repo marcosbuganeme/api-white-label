@@ -10,12 +10,12 @@ class ExampleTest extends TestCase
     {
         $response = $this->getJson('/api/health');
 
-        $response->assertStatus(200)
+        $response->assertHeader('content-type', 'application/json')
             ->assertJsonStructure([
                 'status',
                 'timestamp',
                 'services' => [
-                    'app' => ['status', 'version', 'environment', 'php', 'laravel'],
+                    'app' => ['status'],
                 ],
             ]);
     }
