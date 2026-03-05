@@ -1,0 +1,45 @@
+# Traefik Static Configuration - Production Override
+# Usage: mount this file instead of traefik.yml in docker-compose.prod.yml
+api:
+  dashboard: false
+  insecure: false
+
+entryPoints:
+  web:
+    address: ":80"
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
+  websecure:
+    address: ":443"
+
+# Docker provider - auto-discovers services via labels
+providers:
+  docker:
+    endpoint: "unix:///var/run/docker.sock"
+    exposedByDefault: false
+    network: maisvendas
+    watch: true
+  file:
+    directory: "/etc/traefik/dynamic"
+    watch: true
+
+# Let's Encrypt automatic SSL
+certificatesResolvers:
+  letsencrypt:
+    acme:
+      email: dev@maisvendas.com
+      storage: /letsencrypt/acme.json
+      httpChallenge:
+        entryPoint: web
+
+# Access logs (structured)
+accessLog:
+  format: json
+
+log:
+  level: WARN
+  format: json
