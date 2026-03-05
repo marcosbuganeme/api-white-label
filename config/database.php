@@ -20,13 +20,18 @@ return [
             'prefix' => '',
             'prefix_indexes' => true,
             'search_path' => 'public',
-            'sslmode' => env('DB_SSLMODE', 'prefer'),
+            'sslmode' => env('DB_SSLMODE', 'require'),
+            'sslrootcert' => env('DB_SSLROOTCERT'),
         ],
 
         'mongodb' => [
             'driver' => 'mongodb',
             'dsn' => env('MONGODB_URI', 'mongodb://localhost:27017'),
             'database' => env('MONGODB_DATABASE', 'maisvendas_logs'),
+            'options' => [
+                'connectTimeoutMS' => 2000,
+                'serverSelectionTimeoutMS' => 2000,
+            ],
         ],
 
     ],
@@ -41,7 +46,7 @@ return [
         'client' => env('REDIS_CLIENT', 'phpredis'),
 
         'options' => [
-            'cluster' => env('REDIS_CLUSTER', 'redis'),
+            'cluster' => env('REDIS_CLUSTER', false),
             'prefix' => env('REDIS_PREFIX', Str::slug((string) env('APP_NAME', 'laravel'), '_').'_database_'),
             'persistent' => env('REDIS_PERSISTENT', false),
         ],

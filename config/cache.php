@@ -33,10 +33,6 @@ return [
             'lock_connection' => env('REDIS_CACHE_LOCK_CONNECTION', 'default'),
         ],
 
-        'octane' => [
-            'driver' => 'octane',
-        ],
-
         'failover' => [
             'driver' => 'failover',
             'stores' => [

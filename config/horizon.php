@@ -17,7 +17,7 @@ return [
         Str::slug(env('APP_NAME', 'laravel'), '_').'_horizon:'
     ),
 
-    'middleware' => ['api'],
+    'middleware' => ['api', 'auth'],
 
     'allowed_emails' => env('HORIZON_ALLOWED_EMAILS', ''),
 
@@ -46,7 +46,7 @@ return [
         ],
     ],
 
-    'fast_termination' => false,
+    'fast_termination' => true,
     'memory_limit' => (int) env('HORIZON_MEMORY_LIMIT', 128),
 
     'defaults' => [
@@ -68,16 +68,17 @@ return [
     'environments' => [
         'production' => [
             'supervisor-default' => [
-                'maxProcesses' => 3,
-                'balanceMaxShift' => 1,
+                'maxProcesses' => 5,
+                'balanceMaxShift' => 2,
                 'balanceCooldown' => 3,
-                'queue' => ['default', 'logs', 'metrics'],
+                'queue' => ['default'],
             ],
             'supervisor-logs' => [
                 'connection' => 'redis',
                 'queue' => ['logs'],
                 'balance' => 'auto',
-                'maxProcesses' => 1,
+                'minProcesses' => 1,
+                'maxProcesses' => 2,
                 'tries' => 3,
                 'timeout' => 30,
                 'memory' => 64,
@@ -86,7 +87,8 @@ return [
                 'connection' => 'redis',
                 'queue' => ['metrics'],
                 'balance' => 'auto',
-                'maxProcesses' => 1,
+                'minProcesses' => 1,
+                'maxProcesses' => 2,
                 'tries' => 3,
                 'timeout' => 30,
                 'memory' => 64,
