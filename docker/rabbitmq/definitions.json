@@ -1,22 +1,6 @@
 {
-  "users": [
-    {
-      "name": "maisvendas",
-      "password": "",
-      "tags": ["management"]
-    }
-  ],
   "vhosts": [
     {"name": "maisvendas"}
-  ],
-  "permissions": [
-    {
-      "user": "maisvendas",
-      "vhost": "maisvendas",
-      "configure": ".*",
-      "write": ".*",
-      "read": ".*"
-    }
   ],
   "exchanges": [
     {
