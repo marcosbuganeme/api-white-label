@@ -15,7 +15,11 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // User::factory(10)->create();
+        if (app()->environment('production')) {
+            $this->command->warn('Seeder bloqueado em ambiente de produção.');
+
+            return;
+        }
 
         User::factory()->create([
             'name' => 'Test User',
