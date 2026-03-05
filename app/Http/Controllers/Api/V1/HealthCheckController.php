@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use PhpAmqpLib\Connection\AMQPLazyConnection;
 
 class HealthCheckController extends Controller
 {
@@ -19,6 +20,7 @@ class HealthCheckController extends Controller
                 'database' => $this->checkDatabase(),
                 'redis' => $this->checkRedis(),
                 'mongodb' => $this->checkMongoDB(),
+                'rabbitmq' => $this->checkRabbitMQ(),
             ],
         ];
 
@@ -68,6 +70,25 @@ class HealthCheckController extends Controller
     {
         try {
             DB::connection('mongodb')->getMongoClient()->listDatabases();
+
+            return ['status' => 'up'];
+        } catch (\Throwable $e) {
+            return ['status' => 'down', 'error' => $e->getMessage()];
+        }
+    }
+
+    private function checkRabbitMQ(): array
+    {
+        try {
+            $connection = new AMQPLazyConnection(
+                host: config('queue.connections.rabbitmq.hosts.0.host', 'rabbitmq'),
+                port: config('queue.connections.rabbitmq.hosts.0.port', 5672),
+                user: config('queue.connections.rabbitmq.hosts.0.user', 'guest'),
+                password: config('queue.connections.rabbitmq.hosts.0.password', 'guest'),
+                vhost: config('queue.connections.rabbitmq.hosts.0.vhost', '/'),
+            );
+            $connection->channel();
+            $connection->close();
 
             return ['status' => 'up'];
         } catch (\Throwable $e) {

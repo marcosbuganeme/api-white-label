@@ -8,6 +8,7 @@ on:
 
 env:
   PHP_VERSION: '8.5'
+  PHP_EXTENSIONS: mbstring, xml, zip, bcmath, intl, pgsql, redis, mongodb, amqp, sockets, pcntl
 
 jobs:
   lint:
@@ -20,8 +21,14 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ env.PHP_VERSION }}
-          extensions: mbstring, xml, zip, bcmath, intl, pgsql, redis, mongodb
+          extensions: ${{ env.PHP_EXTENSIONS }}
           coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
 
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
@@ -39,8 +46,14 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ env.PHP_VERSION }}
-          extensions: mbstring, xml, zip, bcmath, intl, pgsql, redis, mongodb
+          extensions: ${{ env.PHP_EXTENSIONS }}
           coverage: none
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
 
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist
@@ -82,6 +95,16 @@ jobs:
         ports:
           - 27017:27017
 
+      rabbitmq:
+        image: rabbitmq:4-alpine
+        ports:
+          - 5672:5672
+        options: >-
+          --health-cmd="rabbitmq-diagnostics -q ping"
+          --health-interval=10s
+          --health-timeout=10s
+          --health-retries=5
+
     steps:
       - uses: actions/checkout@v4
 
@@ -89,8 +112,14 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: ${{ env.PHP_VERSION }}
-          extensions: mbstring, xml, zip, bcmath, intl, pgsql, redis, mongodb
+          extensions: ${{ env.PHP_EXTENSIONS }}
           coverage: xdebug
+
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
 
       - name: Install dependencies
         run: composer install --no-interaction --prefer-dist

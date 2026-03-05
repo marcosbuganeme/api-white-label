@@ -1,0 +1,136 @@
+FROM php:8.5-fpm-bookworm AS base
+
+LABEL maintainer="MaisVendas <dev@maisvendas.com>"
+
+ARG WWWGROUP=1000
+ARG WWWUSER=1000
+
+WORKDIR /var/www/html
+
+# System dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    curl \
+    git \
+    unzip \
+    libpq-dev \
+    libzip-dev \
+    libicu-dev \
+    libpng-dev \
+    libjpeg62-turbo-dev \
+    libfreetype6-dev \
+    libonig-dev \
+    libxml2-dev \
+    libcurl4-openssl-dev \
+    libssl-dev \
+    librabbitmq-dev \
+    pkg-config \
+    supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+# PHP extensions
+RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
+    && docker-php-ext-install -j$(nproc) \
+        pdo_pgsql \
+        pgsql \
+        zip \
+        intl \
+        gd \
+        bcmath \
+        opcache \
+        pcntl \
+        sockets
+
+# PECL extensions
+RUN pecl install redis mongodb amqp \
+    && docker-php-ext-enable redis mongodb amqp
+
+# Composer
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
+
+# Create app user
+RUN groupadd --force -g $WWWGROUP appuser \
+    && useradd -ms /bin/bash --no-user-group -g $WWWGROUP -u $WWWUSER appuser
+
+# PHP config
+COPY docker/app/conf.d/php.ini /usr/local/etc/php/conf.d/app.ini
+COPY docker/app/conf.d/opcache.ini /usr/local/etc/php/conf.d/opcache.ini
+COPY docker/app/conf.d/php-fpm.conf /usr/local/etc/php-fpm.d/zz-docker.conf
+
+# ─────────────────────────────────────────────
+# Development
+# ─────────────────────────────────────────────
+FROM base AS development
+
+RUN pecl install xdebug && docker-php-ext-enable xdebug
+COPY docker/app/conf.d/xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
+
+COPY . /var/www/html
+RUN chown -R appuser:appuser /var/www/html
+USER appuser
+RUN composer install --no-interaction --optimize-autoloader
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD php-fpm-healthcheck || exit 1
+
+EXPOSE 9000
+CMD ["php-fpm"]
+
+# ─────────────────────────────────────────────
+# Production
+# ─────────────────────────────────────────────
+FROM base AS production
+
+# Production-specific PHP config
+COPY docker/app/conf.d/php-prod.ini /usr/local/etc/php/conf.d/zz-prod.ini
+
+COPY . /var/www/html
+RUN chown -R appuser:appuser /var/www/html
+USER appuser
+
+RUN composer install --no-dev --no-interaction --optimize-autoloader \
+    && php artisan config:cache \
+    && php artisan event:cache \
+    && php artisan route:cache \
+    && php artisan view:cache
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+    CMD php-fpm-healthcheck || exit 1
+
+EXPOSE 9000
+CMD ["php-fpm"]
+
+# ─────────────────────────────────────────────
+# Horizon (queue worker)
+# ─────────────────────────────────────────────
+FROM production AS horizon
+
+USER appuser
+HEALTHCHECK --interval=60s --timeout=10s --start-period=15s --retries=3 \
+    CMD php artisan horizon:status | grep -q running || exit 1
+
+CMD ["php", "artisan", "horizon"]
+
+# ─────────────────────────────────────────────
+# Scheduler (cron)
+# ─────────────────────────────────────────────
+FROM production AS scheduler
+
+USER root
+COPY docker/app/scheduler/crontab /etc/cron.d/laravel-scheduler
+RUN chmod 0644 /etc/cron.d/laravel-scheduler \
+    && crontab -u appuser /etc/cron.d/laravel-scheduler
+
+CMD ["cron", "-f"]
+
+# ─────────────────────────────────────────────
+# RabbitMQ Worker (heavy processing)
+# ─────────────────────────────────────────────
+FROM production AS rabbitmq-worker
+
+USER appuser
+CMD ["php", "artisan", "rabbitmq:consume", \
+     "--queue=processing", \
+     "--max-memory=256", \
+     "--sleep=3", \
+     "--tries=3", \
+     "--max-time=3600"]

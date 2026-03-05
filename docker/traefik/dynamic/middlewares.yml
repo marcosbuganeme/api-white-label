@@ -1,0 +1,43 @@
+# Traefik Dynamic Configuration - Middlewares
+http:
+  middlewares:
+    # Rate limiting
+    rate-limit:
+      rateLimit:
+        average: 100
+        burst: 200
+        period: 1m
+
+    # Security headers
+    security-headers:
+      headers:
+        browserXssFilter: true
+        contentTypeNosniff: true
+        frameDeny: true
+        stsIncludeSubdomains: true
+        stsPreload: true
+        stsSeconds: 31536000
+        customFrameOptionsValue: "SAMEORIGIN"
+        customResponseHeaders:
+          X-Robots-Tag: "noindex,nofollow"
+          Server: ""
+
+    # Compress responses
+    compress:
+      compress:
+        excludedContentTypes:
+          - "text/event-stream"
+
+    # Retry on failure
+    retry:
+      retry:
+        attempts: 3
+        initialInterval: 100ms
+
+    # Chain of middlewares for API
+    api-chain:
+      chain:
+        middlewares:
+          - rate-limit
+          - security-headers
+          - compress
