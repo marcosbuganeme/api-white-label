@@ -21,7 +21,7 @@ db.createCollection('logs', {
   }
 });
 
-db.logs.createIndex({ 'logged_at': -1 }, { expireAfterSeconds: 2592000 }); // TTL: 30 days
+db.logs.createIndex({ 'logged_at': 1 }, { expireAfterSeconds: 2592000 }); // TTL: 30 days (ascending required for TTL)
 db.logs.createIndex({ 'level': 1, 'logged_at': -1 });
 db.logs.createIndex({ 'channel': 1, 'logged_at': -1 });
 db.logs.createIndex({ 'environment': 1 });
@@ -29,14 +29,14 @@ db.logs.createIndex({ 'environment': 1 });
 // -- Metrics Collection --
 db.createCollection('metrics');
 
-db.metrics.createIndex({ 'recorded_at': -1 }, { expireAfterSeconds: 7776000 }); // TTL: 90 days
+db.metrics.createIndex({ 'recorded_at': 1 }, { expireAfterSeconds: 7776000 }); // TTL: 90 days (ascending required for TTL)
 db.metrics.createIndex({ 'name': 1, 'recorded_at': -1 });
 db.metrics.createIndex({ 'tags': 1 });
 
 // -- Processed Data Collection --
 db.createCollection('processed_data');
 
-db.processed_data.createIndex({ 'processed_at': -1 });
+db.processed_data.createIndex({ 'processed_at': 1 });
 db.processed_data.createIndex({ 'type': 1, 'processed_at': -1 });
 db.processed_data.createIndex({ 'source_id': 1 }, { sparse: true });
 
