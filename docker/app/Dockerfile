@@ -1,6 +1,6 @@
 FROM php:8.5.3-fpm-bookworm AS base
 
-LABEL maintainer="MaisVendas <dev@maisvendas.com>"
+LABEL maintainer="MaisVendas <molavosbdeveloper@gmail.com>"
 
 ARG WWWGROUP=1000
 ARG WWWUSER=1000

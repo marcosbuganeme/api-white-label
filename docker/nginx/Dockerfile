@@ -1,6 +1,6 @@
 FROM nginx:1.28.2-alpine
 
-LABEL maintainer="MaisVendas <dev@maisvendas.com>"
+LABEL maintainer="MaisVendas <molavosbdeveloper@gmail.com>"
 
 # Remove default config
 RUN rm /etc/nginx/conf.d/default.conf
