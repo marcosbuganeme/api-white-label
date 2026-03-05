@@ -1,17 +1,11 @@
 # Traefik Static Configuration
 api:
-  dashboard: false
-  insecure: false
+  dashboard: true
+  insecure: true
 
 entryPoints:
   web:
     address: ":80"
-    http:
-      redirections:
-        entryPoint:
-          to: websecure
-          scheme: https
-          permanent: true
   websecure:
     address: ":443"
 
@@ -26,14 +20,8 @@ providers:
     directory: "/etc/traefik/dynamic"
     watch: true
 
-# Let's Encrypt automatic SSL
-certificatesResolvers:
-  letsencrypt:
-    acme:
-      email: "${ACME_EMAIL:-dev@maisvendas.com}"
-      storage: /letsencrypt/acme.json
-      httpChallenge:
-        entryPoint: web
+# Let's Encrypt automatic SSL (disabled in dev, override in prod)
+# certificatesResolvers configured in traefik.prod.yml
 
 # Access logs (structured)
 accessLog:
