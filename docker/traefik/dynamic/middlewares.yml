@@ -30,6 +30,12 @@ http:
         excludedContentTypes:
           - "text/event-stream"
 
+    # HTTP to HTTPS redirect (applied per-router, not globally on entrypoint)
+    redirect-to-https:
+      redirectScheme:
+        scheme: https
+        permanent: true
+
     # Basic auth for RabbitMQ management UI
     # Generate: htpasswd -nB admin
     rabbitmq-auth:
@@ -37,10 +43,16 @@ http:
         users:
           - "${RABBITMQ_MGMT_HTPASSWD:-admin:$$2y$$05$$placeholder}"
 
-    # Chain of middlewares for API
+    # Chain of middlewares for API (HTTPS)
     api-chain:
       chain:
         middlewares:
           - rate-limit
           - security-headers
           - compress
+
+    # Chain for HTTP → HTTPS redirect (used on web entrypoint routers)
+    api-redirect-chain:
+      chain:
+        middlewares:
+          - redirect-to-https

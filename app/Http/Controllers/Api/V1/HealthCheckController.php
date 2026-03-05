@@ -7,29 +7,36 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class HealthCheckController extends Controller
 {
     public function __invoke(): JsonResponse
     {
-        $services = [
-            'status' => 'healthy',
-            'timestamp' => now()->toIso8601String(),
-            'services' => [
-                'app' => $this->checkApp(),
-                'database' => $this->checkDatabase(),
-                'redis' => $this->checkRedis(),
-                'mongodb' => $this->checkMongoDB(),
-                'rabbitmq' => $this->checkRabbitMQ(),
-            ],
+        $checks = [
+            'app' => $this->checkApp(),
+            'database' => $this->checkDatabase(),
+            'redis' => $this->checkRedis(),
+            'mongodb' => $this->checkMongoDB(),
+            'rabbitmq' => $this->checkRabbitMQ(),
+            'storage' => $this->checkStorage(),
         ];
 
-        $isHealthy = collect($services['services'])
+        $isHealthy = collect($checks)
             ->every(fn (array $service) => $service['status'] === 'up');
 
-        $services['status'] = $isHealthy ? 'healthy' : 'degraded';
+        $response = [
+            'status' => $isHealthy ? 'healthy' : 'degraded',
+            'timestamp' => now()->toIso8601String(),
+        ];
 
-        return response()->json($services, $isHealthy ? 200 : 503);
+        // Only expose service details in local/testing environments.
+        // In production, the status alone prevents infrastructure topology leakage.
+        if (app()->environment('local', 'testing')) {
+            $response['services'] = $checks;
+        }
+
+        return response()->json($response, $isHealthy ? 200 : 503);
     }
 
     /** @return array<string, string> */
@@ -109,6 +116,23 @@ class HealthCheckController extends Controller
             return $cached;
         } catch (\Throwable) {
             return $this->probeRabbitMQ();
+        }
+    }
+
+    /** @return array<string, string> */
+    private function checkStorage(): array
+    {
+        try {
+            $disk = Storage::disk('spaces');
+            $testKey = '.health-check-'.bin2hex(random_bytes(4));
+            $disk->put($testKey, 'ok');
+            $disk->delete($testKey);
+
+            return ['status' => 'up', 'disk' => 'spaces'];
+        } catch (\Throwable $e) {
+            Log::warning('Health check failed for storage', ['error' => class_basename($e).': '.$e->getCode()]);
+
+            return ['status' => 'down', 'disk' => 'spaces'];
         }
     }
 

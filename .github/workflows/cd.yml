@@ -16,25 +16,45 @@ jobs:
   ci-gate:
     name: CI Gate
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
-      - name: Verify CI passed
+      - name: Wait for CI and verify it passed
         env:
           GH_TOKEN: ${{ github.token }}
           COMMIT_SHA: ${{ github.sha }}
           REPO: ${{ github.repository }}
         run: |
-          echo "Verifying CI checks passed for $COMMIT_SHA"
-          CONCLUSION=$(gh api "repos/$REPO/commits/$COMMIT_SHA/check-runs" \
-            --jq '[.check_runs[] | select(.app.slug == "github-actions" and .name != "CI Gate") | .conclusion] | unique')
-          echo "Check conclusions: $CONCLUSION"
-          if [ "$CONCLUSION" != '["success"]' ]; then
-            echo "::error::CI checks did not all pass: $CONCLUSION"
-            exit 1
-          fi
+          echo "Waiting for CI checks to complete for $COMMIT_SHA..."
+
+          # Retry up to 30 times (5 min) waiting for checks to finish
+          for i in $(seq 1 30); do
+            RESULT=$(gh api "repos/$REPO/commits/$COMMIT_SHA/check-runs" \
+              --jq '[.check_runs[] | select(.app.slug == "github-actions" and .name != "CI Gate" and .name != "Wait for CI and verify it passed") | {name: .name, conclusion: .conclusion, status: .status, completed_at: .completed_at}] | group_by(.name) | map(sort_by(.completed_at // "9999") | last)')
+
+            PENDING=$(echo "$RESULT" | jq '[.[] | select(.status != "completed")] | length')
+            if [ "$PENDING" -gt 0 ]; then
+              echo "Attempt $i/30: $PENDING check(s) still running, waiting 10s..."
+              sleep 10
+              continue
+            fi
+
+            CONCLUSIONS=$(echo "$RESULT" | jq '[.[] | .conclusion] | unique')
+            echo "Check conclusions: $CONCLUSIONS"
+
+            if [ "$CONCLUSIONS" = '["success"]' ]; then
+              echo "All CI checks passed."
+              exit 0
+            else
+              echo "::error::CI checks did not all pass: $CONCLUSIONS"
+              exit 1
+            fi
+          done
+
+          echo "::error::Timed out waiting for CI checks to complete"
+          exit 1
 
   build-and-push:
-    name: Build & Push Docker Images
+    name: Build & Push Docker Image
     needs: ci-gate
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -66,6 +86,8 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2 # v3.10.0
 
+      # Single production image used for all roles (app, horizon, scheduler).
+      # The role is determined at runtime by CONTAINER_ROLE env var and command override.
       - name: Build and push
         uses: docker/build-push-action@263435318d21b8e681c14492fe198e19c3bc6fbf # v6.18.0
         with:
@@ -80,32 +102,17 @@ jobs:
           provenance: true
           sbom: true
 
-  deploy-staging:
-    name: Deploy to Staging
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    environment: staging
-    permissions:
-      contents: read
-    steps:
-      - name: Deploy to staging
-        run: |
-          echo "::error::Staging deployment not configured yet"
-          exit 1
-          # TODO: Configure your staging deployment target here
-
-  deploy-production:
-    name: Deploy to Production
-    needs: deploy-staging
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    environment: production
-    permissions:
-      contents: read
-    steps:
-      - name: Deploy to production
-        run: |
-          echo "::error::Production deployment not configured yet"
-          exit 1
-          # TODO: Configure your production deployment target here
+  # TODO: Configure deployment targets when infrastructure is ready.
+  # deploy-staging:
+  #   name: Deploy to Staging
+  #   needs: build-and-push
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 15
+  #   environment: staging
+  #
+  # deploy-production:
+  #   name: Deploy to Production
+  #   needs: deploy-staging
+  #   runs-on: ubuntu-latest
+  #   timeout-minutes: 15
+  #   environment: production

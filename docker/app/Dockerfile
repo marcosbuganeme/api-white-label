@@ -11,6 +11,7 @@ WORKDIR /var/www/html
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     git \
+    gnupg \
     unzip \
     libpq-dev \
     libzip-dev \
@@ -27,6 +28,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     procps \
     pkg-config \
     supervisor \
+    && rm -rf /var/lib/apt/lists/*
+
+# PostgreSQL 17 client (pg_dump para backups)
+RUN echo "deb http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
+        > /etc/apt/sources.list.d/pgdg.list \
+    && curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
+        | gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends postgresql-client-17 \
+    && rm -rf /var/lib/apt/lists/*
+
+# MongoDB Database Tools (mongodump para backups)
+RUN curl -fsSL https://www.mongodb.org/static/pgp/server-8.0.asc \
+        | gpg --dearmor -o /etc/apt/trusted.gpg.d/mongodb.gpg \
+    && echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/debian bookworm/mongodb-org/8.0 main" \
+        > /etc/apt/sources.list.d/mongodb-org-8.0.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends mongodb-database-tools \
     && rm -rf /var/lib/apt/lists/*
 
 # php-fpm-healthcheck (pinned to v0.5.0)
@@ -91,16 +110,16 @@ CMD ["php-fpm"]
 # ─────────────────────────────────────────────
 FROM base AS production
 
-# Production-specific PHP config
+# Production-specific PHP and PHP-FPM config (baked into image for standalone deploys)
 COPY docker/app/conf.d/php-prod.ini /usr/local/etc/php/conf.d/zz-prod.ini
+COPY docker/app/conf.d/php-fpm-prod.conf /usr/local/etc/php-fpm.d/zz-prod.conf
 
 # Layer caching: copy dependency files first
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-interaction --optimize-autoloader --no-scripts
 
-COPY . /var/www/html
+COPY --chown=appuser:appuser . /var/www/html
 RUN composer run-script post-autoload-dump \
-    && chown -R appuser:appuser /var/www/html \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
 # Entrypoint for runtime caching (route, view, config, event)

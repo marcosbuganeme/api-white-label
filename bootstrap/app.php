@@ -14,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->throttleWithRedis('api');
 
+        // env() is intentional here: bootstrap/app.php runs before the config
+        // service is available. This file is NOT subject to config:cache.
+        /** @var string $proxies */
         $proxies = env('TRUSTED_PROXIES', '172.16.0.0/12');
         $middleware->trustProxies(
             at: $proxies === '*' ? '*' : array_filter(explode(',', $proxies)),

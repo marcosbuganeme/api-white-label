@@ -50,11 +50,9 @@ services:
       target: production
     environment:
       APP_ENV: production
-      PHP_FPM_PM_MAX_CHILDREN: 5
     volumes:
       - app_storage:/var/www/html/storage
       - public_assets:/var/www/html/public
-      - ./docker/app/conf.d/php-fpm-prod.conf:/usr/local/etc/php-fpm.d/zz-prod.conf:ro
     deploy:
       resources:
         limits:
@@ -88,7 +86,7 @@ services:
       --queue=processing,data_crossref,reports
       --max-jobs=1000
       --max-time=3600
-      --memory=128
+      --memory=90
       --tries=3
       --backoff=30,60,120
       --sleep=3
@@ -109,11 +107,13 @@ services:
       target: production
     environment:
       APP_ENV: production
+    volumes:
+      - app_storage:/var/www/html/storage
     deploy:
       resources:
         limits:
-          memory: 64M
-          cpus: '0.10'
+          memory: 192M
+          cpus: '0.25'
 
   # ──────────────────────────────────────────────
   # PostgreSQL - Optimized for 640M limit
@@ -191,8 +191,7 @@ services:
     restart: always
     security_opt:
       - no-new-privileges:true
-    ports: !override
-      - "127.0.0.1:${RABBITMQ_PORT:-5672}:5672"
+    ports: !reset []
     deploy:
       resources:
         limits:

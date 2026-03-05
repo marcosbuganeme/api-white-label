@@ -11,12 +11,8 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
 {
     public function register(): void
     {
-        if (! $this->app->environment('local')) {
-            return;
-        }
-
-        Telescope::night();
-
+        // Always scrub sensitive headers, regardless of environment.
+        // Prevents exposure if Telescope is accidentally enabled in production.
         Telescope::hideRequestParameters(['_token']);
         Telescope::hideRequestHeaders([
             'cookie',
@@ -24,6 +20,12 @@ class TelescopeServiceProvider extends TelescopeApplicationServiceProvider
             'x-xsrf-token',
             'authorization',
         ]);
+
+        if (! $this->app->environment('local')) {
+            return;
+        }
+
+        Telescope::night();
 
         Telescope::filter(function (IncomingEntry $entry) {
             return true;

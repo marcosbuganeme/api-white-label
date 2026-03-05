@@ -60,6 +60,33 @@ return [
             'report' => false,
         ],
 
+        'spaces' => [
+            'driver' => 's3',
+            'key' => env('DO_SPACES_KEY'),
+            'secret' => env('DO_SPACES_SECRET'),
+            'region' => env('DO_SPACES_REGION', 'nyc3'),
+            'bucket' => env('DO_SPACES_BUCKET', 'white-label-spaces'),
+            'url' => env('DO_SPACES_CDN_URL', 'https://white-label-spaces.nyc3.cdn.digitaloceanspaces.com'),
+            'endpoint' => env('DO_SPACES_ENDPOINT', 'https://nyc3.digitaloceanspaces.com'),
+            'use_path_style_endpoint' => false,
+            'visibility' => 'public',
+            'root' => 'api/assets',
+            'throw' => true,
+        ],
+
+        'backups' => [
+            'driver' => 's3',
+            'key' => env('DO_SPACES_KEY'),
+            'secret' => env('DO_SPACES_SECRET'),
+            'region' => env('DO_SPACES_REGION', 'nyc3'),
+            'bucket' => env('DO_SPACES_BUCKET', 'white-label-spaces'),
+            'endpoint' => env('DO_SPACES_ENDPOINT', 'https://nyc3.digitaloceanspaces.com'),
+            'use_path_style_endpoint' => false,
+            'visibility' => 'private',
+            'root' => 'infra',
+            'throw' => true,
+        ],
+
     ],
 
     /*

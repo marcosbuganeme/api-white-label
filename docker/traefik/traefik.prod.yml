@@ -7,12 +7,8 @@ api:
 entryPoints:
   web:
     address: ":80"
-    http:
-      redirections:
-        entryPoint:
-          to: websecure
-          scheme: https
-          permanent: true
+    # No global redirect here - redirect is handled per-router via middleware
+    # to avoid blocking ACME HTTP-01 challenges on first boot
   websecure:
     address: ":443"
 

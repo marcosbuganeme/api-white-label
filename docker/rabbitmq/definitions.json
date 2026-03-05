@@ -1,4 +1,11 @@
 {
+  "users": [
+    {
+      "name": "maisvendas",
+      "password": "",
+      "tags": ["management"]
+    }
+  ],
   "vhosts": [
     {"name": "maisvendas"}
   ],

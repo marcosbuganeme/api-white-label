@@ -40,6 +40,10 @@ return [
             'driver' => 'session',
             'provider' => 'users',
         ],
+
+        // API guard: uses session driver with array backend (stateless).
+        // When implementing authentication, install Laravel Sanctum and change to:
+        //   'driver' => 'sanctum'
         'api' => [
             'driver' => 'session',
             'provider' => 'users',

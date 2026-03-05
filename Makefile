@@ -1,5 +1,6 @@
 .PHONY: help setup up down restart logs sh test lint analyse fresh horizon migrate seed cache-clear \
-       prod-up prod-down prod-restart prod-logs prod-scale-workers prod-config
+       prod-up prod-down prod-restart prod-logs prod-scale-workers prod-config \
+       backup-pgsql backup-mongodb backup-all backup-cleanup
 
 # ══════════════════════════════════════════════
 # API MaisVendas - Makefile
@@ -159,3 +160,19 @@ prod-deploy: ## Deploy production optimizations (run inside container)
 	$(PROD_COMPOSE) exec app php artisan view:cache
 	$(PROD_COMPOSE) exec app php artisan event:cache
 	$(PROD_COMPOSE) exec app php artisan horizon:terminate
+
+# ── Backups ────────────────────────────────
+
+backup-pgsql: ## Backup PostgreSQL → Spaces
+	docker compose exec app php artisan backup:pgsql
+
+backup-mongodb: ## Backup MongoDB → Spaces
+	docker compose exec app php artisan backup:mongodb
+
+backup-all: ## Executar todos os backups
+	docker compose exec app php artisan backup:pgsql
+	docker compose exec app php artisan backup:mongodb
+
+backup-cleanup: ## Limpar backups antigos
+	docker compose exec app php artisan backup:pgsql --cleanup
+	docker compose exec app php artisan backup:mongodb --cleanup

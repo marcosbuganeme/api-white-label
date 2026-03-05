@@ -21,6 +21,8 @@ services:
     image: traefik:v3.3.7
     container_name: maisvendas-traefik
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     ports:
       - "${TRAEFIK_HTTP_PORT:-80}:80"
       - "${TRAEFIK_HTTPS_PORT:-443}:443"
@@ -55,11 +57,12 @@ services:
       - maisvendas
     labels:
       - "traefik.enable=true"
+      # HTTP router (dev: serves directly, prod: redirects to HTTPS via middleware)
       - "traefik.http.routers.api.rule=Host(`${APP_DOMAIN:-api.maisvendas.localhost}`)"
       - "traefik.http.routers.api.entrypoints=web"
       - "traefik.http.routers.api.middlewares=api-chain@file"
       - "traefik.http.services.api.loadbalancer.server.port=80"
-      # HTTPS (production)
+      # HTTPS router (production - uses api-chain with security headers)
       - "traefik.http.routers.api-secure.rule=Host(`${APP_DOMAIN:-api.maisvendas.localhost}`)"
       - "traefik.http.routers.api-secure.entrypoints=websecure"
       - "traefik.http.routers.api-secure.tls.certresolver=letsencrypt"
@@ -117,9 +120,11 @@ services:
     volumes:
       - .:/var/www/html
     depends_on:
-      app:
+      postgres:
         condition: service_healthy
       redis:
+        condition: service_healthy
+      mongodb:
         condition: service_healthy
     networks:
       - maisvendas
@@ -153,14 +158,14 @@ services:
       --queue=processing,data_crossref,reports
       --max-jobs=1000
       --max-time=3600
-      --memory=256
+      --memory=230
       --tries=3
       --backoff=30,60,120
       --sleep=3
     volumes:
       - .:/var/www/html
     depends_on:
-      app:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
@@ -198,7 +203,7 @@ services:
     volumes:
       - .:/var/www/html
     depends_on:
-      app:
+      postgres:
         condition: service_healthy
       redis:
         condition: service_healthy

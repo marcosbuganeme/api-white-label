@@ -69,6 +69,8 @@ return [
         'production' => [
             'supervisor-default' => [
                 'maxProcesses' => 5,
+                'maxTime' => 3600,
+                'maxJobs' => 1000,
                 'balanceMaxShift' => 2,
                 'balanceCooldown' => 3,
                 'queue' => ['default'],
@@ -80,6 +82,8 @@ return [
                 'autoScalingStrategy' => 'time',
                 'minProcesses' => 1,
                 'maxProcesses' => 2,
+                'maxTime' => 3600,
+                'maxJobs' => 1000,
                 'tries' => 3,
                 'timeout' => 30,
                 'memory' => 64,
@@ -91,6 +95,8 @@ return [
                 'autoScalingStrategy' => 'time',
                 'minProcesses' => 1,
                 'maxProcesses' => 2,
+                'maxTime' => 3600,
+                'maxJobs' => 1000,
                 'tries' => 3,
                 'timeout' => 30,
                 'memory' => 64,
