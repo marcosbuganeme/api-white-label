@@ -46,12 +46,27 @@ class BackupMongoDBCommand extends Command
                 return self::FAILURE;
             }
 
-            $result = Process::timeout(300)->run([
-                'mongodump',
-                "--uri={$uri}",
-                '--archive='.$tempFile,
-                '--gzip',
-            ]);
+            $tempConfig = tempnam(sys_get_temp_dir(), 'mongodump_');
+            if ($tempConfig === false) {
+                $this->error('Falha ao criar arquivo de configuração temporário.');
+
+                return self::FAILURE;
+            }
+            chmod($tempConfig, 0600);
+            file_put_contents($tempConfig, "uri: \"{$uri}\"\n");
+
+            try {
+                $result = Process::timeout(300)->run([
+                    'mongodump',
+                    '--config='.$tempConfig,
+                    '--archive='.$tempFile,
+                    '--gzip',
+                ]);
+            } finally {
+                if (file_exists($tempConfig)) {
+                    unlink($tempConfig);
+                }
+            }
 
             if ($result->failed()) {
                 $this->error('mongodump falhou: '.$result->errorOutput());
@@ -70,8 +85,11 @@ class BackupMongoDBCommand extends Command
                 return self::FAILURE;
             }
 
-            $disk->put($remotePath, $stream);
-            fclose($stream);
+            try {
+                $disk->put($remotePath, $stream);
+            } finally {
+                fclose($stream);
+            }
 
             $size = round((int) filesize($tempFile) / 1024 / 1024, 2);
 
@@ -106,6 +124,13 @@ class BackupMongoDBCommand extends Command
 
     private function cleanup(int $keepDays): void
     {
+        if ($keepDays < 1) {
+            $this->error('--keep-days deve ser no mínimo 1.');
+            Log::error('Backup cleanup abortado: keep-days deve ser >= 1', ['keep_days' => $keepDays]);
+
+            return;
+        }
+
         $this->info("Removendo backups com mais de {$keepDays} dias...");
 
         $disk = Storage::disk('backups');

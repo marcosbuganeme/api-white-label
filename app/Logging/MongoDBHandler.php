@@ -67,7 +67,7 @@ class MongoDBHandler extends AbstractProcessingHandler
             if ($value instanceof \Throwable) {
                 $trace = $value->getTrace();
                 $value = [
-                    'class' => get_class($value),
+                    'class' => $value::class,
                     'message' => $value->getMessage(),
                     'code' => $value->getCode(),
                     'file' => $value->getFile(),
@@ -81,7 +81,12 @@ class MongoDBHandler extends AbstractProcessingHandler
                 if ($value instanceof \Stringable) {
                     $value = (string) $value;
                 } else {
-                    $value = get_class($value);
+                    try {
+                        $encoded = json_encode($value, JSON_THROW_ON_ERROR);
+                        $value = json_decode($encoded, true, 512, JSON_THROW_ON_ERROR);
+                    } catch (\Throwable) {
+                        $value = $value::class;
+                    }
                 }
             }
         });

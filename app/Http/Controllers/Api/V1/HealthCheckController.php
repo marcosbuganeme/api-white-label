@@ -106,14 +106,18 @@ class HealthCheckController extends Controller
     private function checkRabbitMQ(): array
     {
         try {
-            /** @var array<string, string> $cached */
-            $cached = Cache::remember('health:rabbitmq', 10, fn (): array => $this->probeRabbitMQ());
+            /** @var array<string, string>|null $cached */
+            $cached = Cache::get('health:rabbitmq');
 
-            if ($cached['status'] === 'down') {
-                Cache::forget('health:rabbitmq');
+            if ($cached !== null) {
+                return $cached;
             }
 
-            return $cached;
+            $result = $this->probeRabbitMQ();
+            $ttl = $result['status'] === 'up' ? 10 : 5;
+            Cache::put('health:rabbitmq', $result, $ttl);
+
+            return $result;
         } catch (\Throwable) {
             return $this->probeRabbitMQ();
         }
@@ -123,14 +127,21 @@ class HealthCheckController extends Controller
     private function checkStorage(): array
     {
         try {
-            $disk = Storage::disk('backups');
-            $testKey = '.health-check-'.bin2hex(random_bytes(4));
-            $disk->put($testKey, 'ok');
-            $disk->delete($testKey);
+            /** @var array<string, string> $result */
+            $result = Cache::remember('health:storage', 60, function (): array {
+                $disk = Storage::disk('backups');
+                $testKey = '.health-check-'.bin2hex(random_bytes(4));
 
-            return ['status' => 'up', 'disk' => 'backups'];
+                $disk->put($testKey, 'ok');
+                $disk->delete($testKey);
+
+                return ['status' => 'up', 'disk' => 'backups'];
+            });
+
+            return $result;
         } catch (\Throwable $e) {
-            Log::warning('Health check failed for storage', ['error' => class_basename($e).': '.$e->getCode()]);
+            Cache::forget('health:storage');
+            Log::warning('Health check storage failed', ['error' => $e->getMessage()]);
 
             return ['status' => 'down', 'disk' => 'backups'];
         }
