@@ -6,14 +6,22 @@ on:
   pull_request:
     branches: [main, develop]
 
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
 env:
-  PHP_VERSION: '8.5'
+  PHP_VERSION: '8.5.3'
   PHP_EXTENSIONS: mbstring, xml, zip, bcmath, intl, pgsql, redis, mongodb, amqp, sockets, pcntl
 
 jobs:
   lint:
     name: Code Style (Pint)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -28,10 +36,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: vendor
-          key: composer-${{ hashFiles('composer.lock') }}
+          key: composer-${{ runner.os }}-php${{ env.PHP_VERSION }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-php${{ env.PHP_VERSION }}-
 
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist
+        run: composer install --no-interaction --prefer-dist --no-scripts --optimize-autoloader
 
       - name: Run Pint
         run: vendor/bin/pint --test
@@ -39,6 +48,7 @@ jobs:
   static-analysis:
     name: Static Analysis (PHPStan)
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -53,10 +63,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: vendor
-          key: composer-${{ hashFiles('composer.lock') }}
+          key: composer-${{ runner.os }}-php${{ env.PHP_VERSION }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-php${{ env.PHP_VERSION }}-
 
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Run PHPStan
         run: vendor/bin/phpstan analyse --no-progress
@@ -64,10 +75,11 @@ jobs:
   tests:
     name: Tests
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     services:
       postgres:
-        image: postgres:17-alpine
+        image: postgres:17.9-alpine
         env:
           POSTGRES_DB: maisvendas_test
           POSTGRES_USER: postgres
@@ -81,7 +93,7 @@ jobs:
           --health-retries=5
 
       redis:
-        image: redis:7-alpine
+        image: redis:7.4.8-alpine
         ports:
           - 6379:6379
         options: >-
@@ -91,12 +103,17 @@ jobs:
           --health-retries=5
 
       mongodb:
-        image: mongo:8
+        image: mongo:8.0.19
         ports:
           - 27017:27017
+        options: >-
+          --health-cmd="mongosh --eval 'db.adminCommand({ping:1})'"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
       rabbitmq:
-        image: rabbitmq:4-alpine
+        image: rabbitmq:4.2.4-management-alpine
         ports:
           - 5672:5672
         options: >-
@@ -119,10 +136,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: vendor
-          key: composer-${{ hashFiles('composer.lock') }}
+          key: composer-${{ runner.os }}-php${{ env.PHP_VERSION }}-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-php${{ env.PHP_VERSION }}-
 
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist
+        run: composer install --no-interaction --prefer-dist --optimize-autoloader
 
       - name: Copy env
         run: cp .env.ci .env
@@ -139,6 +157,7 @@ jobs:
   security:
     name: Security Audit
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
 
@@ -149,7 +168,7 @@ jobs:
           coverage: none
 
       - name: Install dependencies
-        run: composer install --no-interaction --prefer-dist
+        run: composer install --no-dev --no-interaction --prefer-dist --no-scripts
 
       - name: Security audit
         run: composer audit
