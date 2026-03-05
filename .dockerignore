@@ -6,7 +6,10 @@
 .env*
 node_modules
 vendor
-storage/logs/*
+storage/app/*
+!storage/app/.gitignore
+storage/debugbar
+storage/logs
 storage/framework/cache/*
 storage/framework/sessions/*
 storage/framework/views/*
@@ -17,4 +20,11 @@ pint.json
 *.md
 docker-compose.yml
 docker-compose.*.yml
+docker/nginx
+docker/traefik
+docker/rabbitmq
+docker/postgres
+docker/mongodb
+.phpstan
+coverage
 Makefile

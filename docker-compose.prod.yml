@@ -46,6 +46,8 @@ services:
   # ──────────────────────────────────────────────
   app:
     restart: always
+    security_opt:
+      - no-new-privileges:true
     build:
       target: production
     environment:
@@ -64,6 +66,8 @@ services:
   # ──────────────────────────────────────────────
   horizon:
     restart: always
+    security_opt:
+      - no-new-privileges:true
     build:
       target: production
     environment:
@@ -79,6 +83,8 @@ services:
   # ──────────────────────────────────────────────
   rabbitmq-worker:
     restart: always
+    security_opt:
+      - no-new-privileges:true
     build:
       target: production
     command: >
@@ -103,6 +109,8 @@ services:
   # ──────────────────────────────────────────────
   scheduler:
     restart: always
+    security_opt:
+      - no-new-privileges:true
     build:
       target: production
     environment:
@@ -151,13 +159,11 @@ services:
     command: >
       redis-server
         --appendonly yes
-        --maxmemory 192mb
+        --maxmemory 128mb
         --maxmemory-policy allkeys-lru
         --tcp-backlog 511
         --timeout 300
         --tcp-keepalive 60
-        --save 60 1000
-        --save 300 100
         --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
     deploy:
       resources:
