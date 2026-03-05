@@ -37,12 +37,11 @@ return [
         'rabbitmq' => [
             'driver' => 'rabbitmq',
             'queue' => env('RABBITMQ_QUEUE', 'processing'),
-            'connection' => PhpAmqpLib\Connection\AMQPLazyConnection::class,
 
             'hosts' => [
                 [
                     'host' => env('RABBITMQ_HOST', 'rabbitmq'),
-                    'port' => env('RABBITMQ_PORT', 5672),
+                    'port' => (int) env('RABBITMQ_PORT', 5672),
                     'user' => env('RABBITMQ_USER', 'maisvendas'),
                     'password' => env('RABBITMQ_PASSWORD', 'secret'),
                     'vhost' => env('RABBITMQ_VHOST', 'maisvendas'),
