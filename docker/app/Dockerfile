@@ -115,29 +115,3 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
 EXPOSE 9000
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
 CMD ["php-fpm"]
-
-# ─────────────────────────────────────────────
-# Horizon (queue worker)
-# ─────────────────────────────────────────────
-FROM production AS horizon
-
-USER appuser
-HEALTHCHECK --interval=60s --timeout=10s --start-period=15s --retries=3 \
-    CMD php artisan horizon:status | grep -q running || exit 1
-
-CMD ["php", "artisan", "horizon"]
-
-# ─────────────────────────────────────────────
-# RabbitMQ Worker (heavy processing)
-# ─────────────────────────────────────────────
-FROM production AS rabbitmq-worker
-
-USER appuser
-CMD ["php", "artisan", "queue:work", "rabbitmq", \
-     "--queue=processing,data_crossref,reports", \
-     "--max-jobs=1000", \
-     "--max-time=3600", \
-     "--memory=128", \
-     "--tries=3", \
-     "--backoff=30,60,120", \
-     "--sleep=3"]
