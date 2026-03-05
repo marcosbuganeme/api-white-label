@@ -11,4 +11,4 @@ SELECT 'CREATE DATABASE maisvendas_test'
 WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'maisvendas_test')\gexec
 
 -- Grant permissions
-GRANT ALL PRIVILEGES ON DATABASE maisvendas_test TO postgres;
+GRANT ALL PRIVILEGES ON DATABASE maisvendas_test TO CURRENT_USER;
