@@ -7,9 +7,16 @@ use MongoDB\Laravel\Eloquent\Model;
 class Metric extends Model
 {
     protected $connection = 'mongodb';
+    /** @var string */
     protected $collection = 'metrics';
 
-    protected $guarded = [];
+    protected $fillable = [
+        'name',
+        'value',
+        'tags',
+        'metadata',
+        'recorded_at',
+    ];
 
     protected function casts(): array
     {

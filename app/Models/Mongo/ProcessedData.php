@@ -7,9 +7,16 @@ use MongoDB\Laravel\Eloquent\Model;
 class ProcessedData extends Model
 {
     protected $connection = 'mongodb';
+    /** @var string */
     protected $collection = 'processed_data';
 
-    protected $guarded = [];
+    protected $fillable = [
+        'type',
+        'source_id',
+        'payload',
+        'metadata',
+        'processed_at',
+    ];
 
     protected function casts(): array
     {
