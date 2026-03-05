@@ -1,4 +1,5 @@
-.PHONY: help setup up down restart logs sh test lint analyse fresh horizon migrate seed cache-clear
+.PHONY: help setup up down restart logs sh test lint analyse fresh horizon migrate seed cache-clear \
+       prod-up prod-down prod-restart prod-logs prod-scale-workers prod-config
 
 # ══════════════════════════════════════════════
 # API MaisVendas - Makefile
@@ -126,12 +127,32 @@ local-analyse: ## Run PHPStan locally
 
 # ── Production ──────────────────────────────
 
+PROD_COMPOSE = docker compose -f docker-compose.yml -f docker-compose.prod.yml
+
+prod-up: ## Start production stack (4GB/2vCPU optimized)
+	$(PROD_COMPOSE) up -d
+
+prod-down: ## Stop production stack
+	$(PROD_COMPOSE) down
+
+prod-restart: ## Restart production stack
+	$(PROD_COMPOSE) restart
+
+prod-logs: ## Tail production logs
+	$(PROD_COMPOSE) logs -f --tail=100
+
+prod-scale-workers: ## Scale prod RabbitMQ workers (usage: make prod-scale-workers N=3)
+	$(PROD_COMPOSE) up -d --scale rabbitmq-worker=$(N) --no-recreate
+
+prod-config: ## Validate merged production compose config
+	$(PROD_COMPOSE) config
+
 prod-build: ## Build production Docker image
 	docker build -f docker/app/Dockerfile --target production -t maisvendas-api:latest .
 
-prod-deploy: cache-warmup ## Deploy production optimizations
-	docker compose exec app php artisan config:cache
-	docker compose exec app php artisan route:cache
-	docker compose exec app php artisan view:cache
-	docker compose exec app php artisan event:cache
-	docker compose exec app php artisan horizon:terminate
+prod-deploy: ## Deploy production optimizations (run inside container)
+	$(PROD_COMPOSE) exec app php artisan config:cache
+	$(PROD_COMPOSE) exec app php artisan route:cache
+	$(PROD_COMPOSE) exec app php artisan view:cache
+	$(PROD_COMPOSE) exec app php artisan event:cache
+	$(PROD_COMPOSE) exec app php artisan horizon:terminate
