@@ -25,6 +25,7 @@ return new class extends Migration
         $processed = $mongo->getMongoDB()->selectCollection('processed_data');
         $processed->createIndex(['type' => 1, 'processed_at' => -1], ['name' => 'type_processed_at']);
         $processed->createIndex(['source_id' => 1], ['name' => 'source_id']);
+        $processed->createIndex(['processed_at' => 1], ['name' => 'processed_at_ttl', 'expireAfterSeconds' => 180 * 86400]); // 180 days
     }
 
     public function down(): void
@@ -32,8 +33,18 @@ return new class extends Migration
         /** @var \MongoDB\Laravel\Connection $mongo */
         $mongo = DB::connection('mongodb');
 
-        $mongo->getMongoDB()->selectCollection('logs')->dropIndexes();
-        $mongo->getMongoDB()->selectCollection('metrics')->dropIndexes();
-        $mongo->getMongoDB()->selectCollection('processed_data')->dropIndexes();
+        $logs = $mongo->getMongoDB()->selectCollection('logs');
+        $logs->dropIndex('level_logged_at');
+        $logs->dropIndex('channel_logged_at');
+        $logs->dropIndex('logged_at_ttl');
+
+        $metrics = $mongo->getMongoDB()->selectCollection('metrics');
+        $metrics->dropIndex('name_recorded_at');
+        $metrics->dropIndex('recorded_at_ttl');
+
+        $processed = $mongo->getMongoDB()->selectCollection('processed_data');
+        $processed->dropIndex('type_processed_at');
+        $processed->dropIndex('source_id');
+        $processed->dropIndex('processed_at_ttl');
     }
 };
