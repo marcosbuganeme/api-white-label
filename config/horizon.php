@@ -10,14 +10,16 @@ return [
 
     'path' => env('HORIZON_PATH', 'horizon'),
 
-    'use' => 'default',
+    'use' => 'horizon',
 
     'prefix' => env(
         'HORIZON_PREFIX',
         Str::slug(env('APP_NAME', 'laravel'), '_').'_horizon:'
     ),
 
-    'middleware' => ['web'],
+    'middleware' => ['api'],
+
+    'allowed_emails' => env('HORIZON_ALLOWED_EMAILS', ''),
 
     'waits' => [
         'redis:default' => 60,
@@ -45,7 +47,7 @@ return [
     ],
 
     'fast_termination' => false,
-    'memory_limit' => 64,
+    'memory_limit' => (int) env('HORIZON_MEMORY_LIMIT', 128),
 
     'defaults' => [
         'supervisor-default' => [
@@ -66,7 +68,7 @@ return [
     'environments' => [
         'production' => [
             'supervisor-default' => [
-                'maxProcesses' => 10,
+                'maxProcesses' => 3,
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
                 'queue' => ['default', 'logs', 'metrics'],
@@ -75,7 +77,7 @@ return [
                 'connection' => 'redis',
                 'queue' => ['logs'],
                 'balance' => 'auto',
-                'maxProcesses' => 3,
+                'maxProcesses' => 1,
                 'tries' => 3,
                 'timeout' => 30,
                 'memory' => 64,
@@ -84,7 +86,7 @@ return [
                 'connection' => 'redis',
                 'queue' => ['metrics'],
                 'balance' => 'auto',
-                'maxProcesses' => 3,
+                'maxProcesses' => 1,
                 'tries' => 3,
                 'timeout' => 30,
                 'memory' => 64,
@@ -102,13 +104,12 @@ return [
     'watch' => [
         'app',
         'bootstrap',
-        'config/**/*.php',
+        'config',
         'database/**/*.php',
         'public/**/*.php',
         'resources/**/*.php',
         'routes',
         'composer.lock',
         'composer.json',
-        '.env',
     ],
 ];
