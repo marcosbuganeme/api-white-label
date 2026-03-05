@@ -2,15 +2,15 @@
 # API MaisVendas - Docker Compose (Development)
 #
 # Arquitetura:
-#   Traefik (edge proxy) → Nginx (web server) → PHP-FPM (app)
-#                                                  ├── PostgreSQL (CRUD)
-#                                                  ├── Redis (cache/sessions)
-#                                                  ├── MongoDB (logs/métricas)
-#                                                  └── RabbitMQ (heavy queues)
+#   Traefik (edge proxy) -> Nginx (web server) -> PHP-FPM (app)
+#                                                  +-- PostgreSQL (CRUD)
+#                                                  +-- Redis (cache/sessions)
+#                                                  +-- MongoDB (logs/metricas)
+#                                                  +-- RabbitMQ (heavy queues)
 #
 # Uso:
 #   docker compose up -d            # Subir tudo
-#   docker compose --profile prod   # Perfil de produção
+#   docker compose up -d --scale rabbitmq-worker=3  # Escalar workers
 ###############################################################################
 
 services:
@@ -18,13 +18,13 @@ services:
   # EDGE PROXY - Traefik
   # ──────────────────────────────────────────────
   traefik:
-    image: traefik:v3.3
+    image: traefik:v3.3.7
     container_name: maisvendas-traefik
     restart: unless-stopped
     ports:
       - "${TRAEFIK_HTTP_PORT:-80}:80"
       - "${TRAEFIK_HTTPS_PORT:-443}:443"
-      - "${TRAEFIK_DASHBOARD_PORT:-8080}:8080"  # Dashboard (dev only)
+      - "127.0.0.1:${TRAEFIK_DASHBOARD_PORT:-8080}:8080"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./docker/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
@@ -78,6 +78,8 @@ services:
         WWWGROUP: ${WWWGROUP:-1000}
     container_name: maisvendas-app
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     volumes:
       - .:/var/www/html
     depends_on:
@@ -86,7 +88,7 @@ services:
       redis:
         condition: service_healthy
       mongodb:
-        condition: service_started
+        condition: service_healthy
       rabbitmq:
         condition: service_healthy
     networks:
@@ -132,7 +134,6 @@ services:
       args:
         WWWUSER: ${WWWUSER:-1000}
         WWWGROUP: ${WWWGROUP:-1000}
-    container_name: maisvendas-rabbitmq-worker
     restart: unless-stopped
     command: >
       php artisan queue:work rabbitmq
@@ -152,11 +153,9 @@ services:
     environment:
       APP_ENV: ${APP_ENV:-local}
       CONTAINER_ROLE: rabbitmq-worker
-    deploy:
-      replicas: ${RABBITMQ_WORKERS:-2}
 
   # ──────────────────────────────────────────────
-  # SCHEDULER - Cron Jobs
+  # SCHEDULER - Laravel Schedule
   # ──────────────────────────────────────────────
   scheduler:
     build:
@@ -168,11 +167,7 @@ services:
         WWWGROUP: ${WWWGROUP:-1000}
     container_name: maisvendas-scheduler
     restart: unless-stopped
-    command: >
-      bash -c "while true; do
-        php artisan schedule:run --verbose --no-interaction;
-        sleep 60;
-      done"
+    command: php artisan schedule:work
     volumes:
       - .:/var/www/html
     depends_on:
@@ -184,24 +179,24 @@ services:
       APP_ENV: ${APP_ENV:-local}
       CONTAINER_ROLE: scheduler
 
-  # ══════════════════════════════════════════════
+  # ==================================================
   # DATA STORES
-  # ══════════════════════════════════════════════
+  # ==================================================
 
   # ──────────────────────────────────────────────
   # PostgreSQL - Primary Relational Database
   # ──────────────────────────────────────────────
   postgres:
-    image: postgres:17-alpine
+    image: postgres:17.9-alpine
     container_name: maisvendas-postgres
     restart: unless-stopped
     ports:
-      - "${DB_EXTERNAL_PORT:-5432}:5432"
+      - "127.0.0.1:${DB_EXTERNAL_PORT:-5432}:5432"
     environment:
       POSTGRES_DB: ${DB_DATABASE:-maisvendas}
       POSTGRES_USER: ${DB_USERNAME:-postgres}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-secret}
-      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=pt_BR.UTF-8"
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
@@ -228,11 +223,11 @@ services:
   # Redis - Cache, Sessions, Light Queues
   # ──────────────────────────────────────────────
   redis:
-    image: redis:7-alpine
+    image: redis:7.4.8-alpine
     container_name: maisvendas-redis
     restart: unless-stopped
     ports:
-      - "${REDIS_EXTERNAL_PORT:-6379}:6379"
+      - "127.0.0.1:${REDIS_EXTERNAL_PORT:-6379}:6379"
     command: >
       redis-server
         --appendonly yes
@@ -243,12 +238,13 @@ services:
         --tcp-keepalive 60
         --save 60 1000
         --save 300 100
+        --requirepass ${REDIS_PASSWORD:-secret}
     volumes:
       - redis_data:/data
     networks:
       - maisvendas
     healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-secret}", "ping"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -257,20 +253,22 @@ services:
   # MongoDB - Logs, Metrics, Processed Data
   # ──────────────────────────────────────────────
   mongodb:
-    image: mongo:8
+    image: mongo:8.0.19
     container_name: maisvendas-mongodb
     restart: unless-stopped
     ports:
-      - "${MONGO_EXTERNAL_PORT:-27017}:27017"
+      - "127.0.0.1:${MONGO_EXTERNAL_PORT:-27017}:27017"
     environment:
       MONGO_INITDB_DATABASE: ${MONGODB_DATABASE:-maisvendas_logs}
+      MONGO_INITDB_ROOT_USERNAME: ${MONGODB_USER:-maisvendas}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGODB_PASSWORD:-secret}
     volumes:
       - mongodb_data:/data/db
       - ./docker/mongodb/init:/docker-entrypoint-initdb.d:ro
     networks:
       - maisvendas
     healthcheck:
-      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      test: ["CMD", "mongosh", "-u", "${MONGODB_USER:-maisvendas}", "-p", "${MONGODB_PASSWORD:-secret}", "--authenticationDatabase", "admin", "--eval", "db.adminCommand('ping')"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -279,17 +277,16 @@ services:
   # RabbitMQ - Message Broker (Heavy Processing)
   # ──────────────────────────────────────────────
   rabbitmq:
-    image: rabbitmq:4-management-alpine
+    image: rabbitmq:4.2.4-management-alpine
     container_name: maisvendas-rabbitmq
     restart: unless-stopped
     ports:
-      - "${RABBITMQ_PORT:-5672}:5672"
-      - "${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
+      - "127.0.0.1:${RABBITMQ_PORT:-5672}:5672"
+      - "127.0.0.1:${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
     environment:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:-maisvendas}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:-secret}
       RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-maisvendas}
-      RABBITMQ_VM_MEMORY_HIGH_WATERMARK: 0.7
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
       - ./docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
