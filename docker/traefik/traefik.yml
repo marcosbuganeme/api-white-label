@@ -1,18 +1,17 @@
 # Traefik Static Configuration
 api:
-  dashboard: true
+  dashboard: false
   insecure: false
 
 entryPoints:
   web:
     address: ":80"
-    # HTTP→HTTPS redirect: enable only in production (breaks ACME HTTP-01 in dev)
-    # http:
-    #   redirections:
-    #     entryPoint:
-    #       to: websecure
-    #       scheme: https
-    #       permanent: true
+    http:
+      redirections:
+        entryPoint:
+          to: websecure
+          scheme: https
+          permanent: true
   websecure:
     address: ":443"
 
@@ -39,9 +38,6 @@ certificatesResolvers:
 # Access logs (structured)
 accessLog:
   format: json
-  filters:
-    statusCodes:
-      - "400-599"
 
 log:
   level: INFO

@@ -118,21 +118,21 @@
       "vhost": "maisvendas",
       "destination": "processing.failed",
       "destination_type": "queue",
-      "routing_key": "processing.failed"
+      "routing_key": "processing.#"
     },
     {
       "source": "maisvendas.dlx",
       "vhost": "maisvendas",
       "destination": "data_crossref.failed",
       "destination_type": "queue",
-      "routing_key": "data_crossref.failed"
+      "routing_key": "data_crossref.#"
     },
     {
       "source": "maisvendas.dlx",
       "vhost": "maisvendas",
       "destination": "reports.failed",
       "destination_type": "queue",
-      "routing_key": "reports.failed"
+      "routing_key": "reports.#"
     }
   ]
 }
