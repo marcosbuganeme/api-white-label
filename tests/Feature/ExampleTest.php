@@ -2,10 +2,17 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Storage::fake('backups');
+    }
+
     public function test_health_check_returns_json_structure(): void
     {
         $response = $this->getJson('/api/health');
@@ -20,30 +27,49 @@ class ExampleTest extends TestCase
                     'redis' => ['status'],
                     'mongodb' => ['status'],
                     'rabbitmq' => ['status'],
+                    'storage' => ['status'],
                 ],
             ]);
     }
 
     public function test_health_check_is_not_rate_limited(): void
     {
-        for ($i = 0; $i < 5; $i++) {
+        for ($i = 0; $i < 65; $i++) {
             $response = $this->getJson('/api/health');
-            $this->assertNotEquals(429, $response->getStatusCode(), 'Health check should not be rate limited');
-            $response->assertJsonPath('services.app.status', 'up');
+            $this->assertNotEquals(429, $response->getStatusCode(), "Request #{$i} was rate limited");
         }
     }
 
-    public function test_health_check_shows_debug_info_only_in_local(): void
+    public function test_health_check_shows_debug_info_in_local_env(): void
+    {
+        $this->app['env'] = 'local';
+
+        $response = $this->getJson('/api/health');
+
+        $response->assertJsonPath('services.app.status', 'up');
+        $response->assertJsonStructure([
+            'services' => [
+                'app' => ['php', 'laravel'],
+            ],
+        ]);
+    }
+
+    public function test_health_check_hides_debug_info_outside_local_env(): void
     {
         $response = $this->getJson('/api/health');
 
-        if (app()->environment('local')) {
-            $response->assertJsonPath('services.app.status', 'up');
-            $response->assertJsonStructure(['services' => ['app' => ['php', 'laravel']]]);
-        } else {
-            $response->assertJsonMissingPath('services.app.php');
-            $response->assertJsonMissingPath('services.app.laravel');
-        }
+        $response->assertJsonMissingPath('services.app.php');
+        $response->assertJsonMissingPath('services.app.laravel');
+    }
+
+    public function test_health_check_hides_services_in_production(): void
+    {
+        $this->app['env'] = 'production';
+
+        $response = $this->getJson('/api/health');
+
+        $response->assertJsonMissingPath('services');
+        $response->assertJsonStructure(['status', 'timestamp']);
     }
 
     public function test_builtin_health_check_returns_ok(): void
