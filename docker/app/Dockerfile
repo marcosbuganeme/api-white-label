@@ -137,6 +137,7 @@ CMD ["php", "artisan", "queue:work", "rabbitmq", \
      "--queue=processing,data_crossref,reports", \
      "--max-jobs=1000", \
      "--max-time=3600", \
-     "--memory=256", \
+     "--memory=128", \
      "--tries=3", \
+     "--backoff=30,60,120", \
      "--sleep=3"]
