@@ -32,7 +32,7 @@ services:
     security_opt:
       - no-new-privileges:true
     volumes:
-      - ./public:/var/www/html/public:ro
+      - public_assets:/var/www/html/public:ro
       - ./docker/nginx/conf.d:/etc/nginx/conf.d:ro
       - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
     deploy:
@@ -53,6 +53,7 @@ services:
       PHP_FPM_PM_MAX_CHILDREN: 5
     volumes:
       - app_storage:/var/www/html/storage
+      - public_assets:/var/www/html/public
       - ./docker/app/conf.d/php-fpm-prod.conf:/usr/local/etc/php-fpm.d/zz-prod.conf:ro
     deploy:
       resources:
@@ -200,4 +201,6 @@ services:
 
 volumes:
   app_storage:
+    driver: local
+  public_assets:
     driver: local
