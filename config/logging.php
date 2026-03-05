@@ -18,7 +18,7 @@ return [
         'stack' => [
             'driver' => 'stack',
             'channels' => explode(',', (string) env('LOG_STACK', 'daily,mongodb')),
-            'ignore_exceptions' => false,
+            'ignore_exceptions' => true,
         ],
 
         'single' => [
@@ -39,8 +39,8 @@ return [
         'mongodb' => [
             'driver' => 'custom',
             'via' => App\Logging\MongoDBLogger::class,
-            'level' => env('LOG_LEVEL', 'debug'),
-            'collection' => 'logs',
+            'level' => env('LOG_MONGODB_LEVEL', 'warning'),
+            'collection' => env('LOG_MONGODB_COLLECTION', 'logs'),
         ],
 
         'stderr' => [

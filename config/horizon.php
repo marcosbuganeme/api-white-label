@@ -68,6 +68,7 @@ return [
     'environments' => [
         'production' => [
             'supervisor-default' => [
+                'minProcesses' => 1,
                 'maxProcesses' => 5,
                 'maxTime' => 3600,
                 'maxJobs' => 1000,

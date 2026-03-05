@@ -29,8 +29,8 @@ return [
             'dsn' => env('MONGODB_URI', 'mongodb://localhost:27017'),
             'database' => env('MONGODB_DATABASE', 'maisvendas_logs'),
             'options' => [
-                'connectTimeoutMS' => 2000,
-                'serverSelectionTimeoutMS' => 2000,
+                'connectTimeoutMS' => (int) env('MONGODB_CONNECT_TIMEOUT_MS', 5000),
+                'serverSelectionTimeoutMS' => (int) env('MONGODB_SERVER_SELECTION_TIMEOUT_MS', 5000),
             ],
         ],
 
@@ -84,6 +84,16 @@ return [
             'password' => env('REDIS_PASSWORD'),
             'port' => env('REDIS_PORT', '6379'),
             'database' => env('REDIS_HORIZON_DB', '2'),
+        ],
+
+        'queue' => [
+            'url' => env('REDIS_URL'),
+            'host' => env('REDIS_HOST', '127.0.0.1'),
+            'username' => env('REDIS_USERNAME'),
+            'password' => env('REDIS_PASSWORD'),
+            'port' => env('REDIS_PORT', '6379'),
+            'database' => env('REDIS_QUEUE_DB', '3'),
+            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_queue_'),
         ],
 
     ],

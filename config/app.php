@@ -121,20 +121,8 @@ return [
     */
 
     'maintenance' => [
-        'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
+        'driver' => env('APP_MAINTENANCE_DRIVER', 'cache'),
         'store' => env('APP_MAINTENANCE_STORE', 'redis'),
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Trusted Proxies
-    |--------------------------------------------------------------------------
-    |
-    | CIDR range of trusted proxies. In Docker, this is the internal network.
-    | Use '*' to trust all proxies (only if behind a known load balancer).
-    |
-    */
-
-    'trusted_proxies' => env('TRUSTED_PROXIES', '172.16.0.0/12'),
 
 ];

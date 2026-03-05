@@ -41,11 +41,11 @@ return [
             'provider' => 'users',
         ],
 
-        // API guard: uses session driver with array backend (stateless).
+        // API guard: placeholder token driver until Sanctum is installed.
         // When implementing authentication, install Laravel Sanctum and change to:
         //   'driver' => 'sanctum'
         'api' => [
-            'driver' => 'session',
+            'driver' => 'token',
             'provider' => 'users',
         ],
     ],
