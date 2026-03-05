@@ -2,15 +2,22 @@
 
 namespace Tests\Unit;
 
+use App\Logging\MongoDBLogger;
+use Monolog\Logger;
 use PHPUnit\Framework\TestCase;
 
 class ExampleTest extends TestCase
 {
-    /**
-     * A basic test example.
-     */
-    public function test_that_true_is_true(): void
+    public function test_mongodb_logger_creates_logger_instance(): void
     {
-        $this->assertTrue(true);
+        $logger = new MongoDBLogger;
+        $config = [
+            'level' => 'debug',
+            'collection' => 'test_logs',
+        ];
+
+        $result = $logger($config);
+
+        $this->assertInstanceOf(Logger::class, $result);
     }
 }
