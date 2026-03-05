@@ -108,7 +108,6 @@ return [
         'bootstrap',
         'config',
         'database/**/*.php',
-        'public/**/*.php',
         'resources/**/*.php',
         'routes',
         'composer.lock',
