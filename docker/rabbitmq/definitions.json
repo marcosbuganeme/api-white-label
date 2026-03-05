@@ -1,23 +1,6 @@
 {
-  "users": [
-    {
-      "name": "maisvendas",
-      "password_hash": "5E/cgfpgTqLJ0K146bF9aViNG64ptQxPODW2dFMRt7wMKbY+",
-      "hashing_algorithm": "rabbit_password_hashing_sha256",
-      "tags": ["management"]
-    }
-  ],
   "vhosts": [
     {"name": "maisvendas"}
-  ],
-  "permissions": [
-    {
-      "user": "maisvendas",
-      "vhost": "maisvendas",
-      "configure": ".*",
-      "write": ".*",
-      "read": ".*"
-    }
   ],
   "exchanges": [
     {
@@ -118,21 +101,21 @@
       "vhost": "maisvendas",
       "destination": "processing.failed",
       "destination_type": "queue",
-      "routing_key": "processing.#"
+      "routing_key": "processing.failed"
     },
     {
       "source": "maisvendas.dlx",
       "vhost": "maisvendas",
       "destination": "data_crossref.failed",
       "destination_type": "queue",
-      "routing_key": "data_crossref.#"
+      "routing_key": "data_crossref.failed"
     },
     {
       "source": "maisvendas.dlx",
       "vhost": "maisvendas",
       "destination": "reports.failed",
       "destination_type": "queue",
-      "routing_key": "reports.#"
+      "routing_key": "reports.failed"
     }
   ]
 }
