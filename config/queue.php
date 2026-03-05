@@ -82,6 +82,16 @@ return [
             'driver' => 'deferred',
         ],
 
+        // ── Failover: fallback automático se Redis cair ──
+        'failover' => [
+            'driver' => 'failover',
+            'connections' => [
+                'redis',
+                'database',
+                'sync',
+            ],
+        ],
+
     ],
 
     'batching' => [
