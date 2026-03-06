@@ -43,6 +43,11 @@ jobs:
 
             TOTAL=$(echo "$RESULT" | jq 'length')
             if [ "$TOTAL" -eq 0 ]; then
+              if [ "$i" -gt 6 ]; then
+                echo "::error::No CI checks found for commit $COMMIT_SHA after $i attempts."
+                echo "::error::Ensure CI ran on this commit before creating a release tag."
+                exit 1
+              fi
               echo "Attempt $i/30: no CI checks found yet, waiting 10s..."
               sleep 10
               continue
