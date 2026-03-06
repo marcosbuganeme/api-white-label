@@ -26,18 +26,18 @@ if [ "$APP_ENV" = "production" ] || [ "$APP_ENV" = "staging" ]; then
 
     case "${CONTAINER_ROLE:-app}" in
         app)
-            php artisan config:cache || { echo "WARNING: config:cache failed"; }
-            php artisan event:cache  || { echo "WARNING: event:cache failed"; }
-            php artisan route:cache  || { echo "WARNING: route:cache failed"; }
-            php artisan view:cache   || { echo "WARNING: view:cache failed"; }
+            php artisan config:cache
+            php artisan event:cache
+            php artisan route:cache
+            php artisan view:cache
             ;;
         horizon|rabbitmq-worker)
-            php artisan config:cache || { echo "WARNING: config:cache failed"; }
-            php artisan event:cache  || { echo "WARNING: event:cache failed"; }
+            php artisan config:cache
+            php artisan event:cache
             ;;
         scheduler)
-            php artisan config:cache || { echo "WARNING: config:cache failed"; }
-            php artisan event:cache  || { echo "WARNING: event:cache failed"; }
+            php artisan config:cache
+            php artisan event:cache
             ;;
     esac
 fi
