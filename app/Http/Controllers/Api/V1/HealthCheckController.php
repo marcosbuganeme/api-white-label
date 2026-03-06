@@ -126,16 +126,18 @@ class HealthCheckController extends Controller
     /** @return array<string, string> */
     private function checkStorage(): array
     {
+        $diskName = app()->isProduction() ? 'backups' : 'local';
+
         try {
             /** @var array<string, string> $result */
-            $result = Cache::remember('health:storage', 60, function (): array {
-                $disk = Storage::disk('backups');
+            $result = Cache::remember('health:storage', 60, function () use ($diskName): array {
+                $disk = Storage::disk($diskName);
                 $testKey = '.health-check-'.bin2hex(random_bytes(4));
 
                 $disk->put($testKey, 'ok');
                 $disk->delete($testKey);
 
-                return ['status' => 'up', 'disk' => 'backups'];
+                return ['status' => 'up', 'disk' => $diskName];
             });
 
             return $result;
@@ -143,7 +145,7 @@ class HealthCheckController extends Controller
             Cache::forget('health:storage');
             Log::warning('Health check storage failed', ['error' => $e->getMessage()]);
 
-            return ['status' => 'down', 'disk' => 'backups'];
+            return ['status' => 'down', 'disk' => $diskName];
         }
     }
 
