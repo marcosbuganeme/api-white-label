@@ -34,7 +34,6 @@ RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
     libfcgi-bin \
     procps \
     pkg-config \
-    supervisor \
     postgresql-client-17 \
     mongodb-database-tools \
     && rm -rf /var/lib/apt/lists/*
