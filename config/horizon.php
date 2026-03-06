@@ -17,9 +17,9 @@ return [
         Str::slug(env('APP_NAME', 'laravel'), '_').'_horizon:'
     ),
 
-    // NOTE: Horizon requer SESSION_DRIVER diferente de 'array' para autenticação via browser.
-    // Em produção, configure SESSION_DRIVER=redis ou use HTTP Basic Auth via Traefik para /horizon.
-    'middleware' => ['web', 'auth:sanctum'],
+    // In local, Horizon dashboard is unprotected (gate allows all).
+    // In production, protect via Traefik IP-whitelist or Basic Auth (SESSION_DRIVER=array is stateless).
+    'middleware' => ['web'],
 
     'allowed_emails' => env('HORIZON_ALLOWED_EMAILS', ''),
 
