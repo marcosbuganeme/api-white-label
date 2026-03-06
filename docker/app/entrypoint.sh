@@ -14,6 +14,14 @@ for dir in "${dirs[@]}"; do
     mkdir -p "$dir" 2>/dev/null || true
 done
 
+# Apply PHP-FPM pm.max_children from environment variable (if set)
+if [ -n "${PHP_FPM_PM_MAX_CHILDREN:-}" ]; then
+    FPM_CONF="/usr/local/etc/php-fpm.d/zz-docker.conf"
+    if [ -f "$FPM_CONF" ]; then
+        sed -i "s/^pm\.max_children = .*/pm.max_children = ${PHP_FPM_PM_MAX_CHILDREN}/" "$FPM_CONF"
+    fi
+fi
+
 # Fix ownership if running as root (production entrypoint)
 if [ "$(id -u)" = "0" ]; then
     chown -R appuser:appuser /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
