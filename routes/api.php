@@ -13,10 +13,11 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-// Health check (sem prefixo de versão, sem throttle para probes)
+// Health check (sem prefixo de versão, throttle dedicado para probes)
 Route::get('/health', HealthCheckController::class)
     ->name('health')
-    ->withoutMiddleware('throttle:api');
+    ->withoutMiddleware('throttle:api')
+    ->middleware('throttle:health');
 
 // V1
 Route::prefix('v1')->name('v1.')->group(function () {

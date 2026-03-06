@@ -24,5 +24,9 @@ class AppServiceProvider extends ServiceProvider
                 ? Limit::perMinute(600)->by('user:'.$request->user()->id)
                 : Limit::perMinute(60)->by('ip:'.$request->ip());
         });
+
+        RateLimiter::for('health', function (Request $request) {
+            return Limit::perMinute(60)->by('health:'.$request->ip());
+        });
     }
 }

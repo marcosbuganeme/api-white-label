@@ -12,7 +12,9 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->throttleWithRedis('api');
+        if (env('APP_ENV') !== 'testing') {
+            $middleware->throttleWithRedis('api');
+        }
 
         // env() is intentional here: bootstrap/app.php runs before the config
         // service is available. This file is NOT subject to config:cache.
