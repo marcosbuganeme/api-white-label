@@ -41,11 +41,8 @@ return [
             'provider' => 'users',
         ],
 
-        // API guard: placeholder token driver until Sanctum is installed.
-        // When implementing authentication, install Laravel Sanctum and change to:
-        //   'driver' => 'sanctum'
         'api' => [
-            'driver' => 'token',
+            'driver' => 'sanctum',
             'provider' => 'users',
         ],
     ],
@@ -70,7 +67,7 @@ return [
     'providers' => [
         'users' => [
             'driver' => 'eloquent',
-            'model' => env('AUTH_MODEL', App\Models\User::class),
+            'model' => App\Models\User::class,
         ],
 
         // 'users' => [
