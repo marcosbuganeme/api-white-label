@@ -33,7 +33,7 @@ fi
 
 # PHPStan (static analysis)
 echo "  → PHPStan (análise estática)..."
-if ! $RUN vendor/bin/phpstan analyse 2>&1; then
+if ! $RUN vendor/bin/phpstan analyse --no-progress 2>&1; then
     echo ""
     echo "  ✗ PHPStan encontrou erros."
     echo ""
