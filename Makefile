@@ -1,6 +1,7 @@
 .PHONY: help setup up down restart logs sh test lint analyse fresh horizon migrate seed cache-clear \
        prod-up prod-down prod-restart prod-logs prod-scale-workers prod-config \
-       backup-pgsql backup-mongodb backup-all backup-cleanup
+       backup-pgsql backup-mongodb backup-all backup-cleanup \
+       hooks
 
 # ══════════════════════════════════════════════
 # API MaisVendas - Makefile
@@ -18,6 +19,7 @@ setup: ## First-time project setup (Docker)
 	docker compose exec app composer install
 	docker compose exec app bash -c 'grep -q "^APP_KEY=$$" .env && php artisan key:generate || echo "APP_KEY already set, skipping."'
 	docker compose exec app php artisan migrate
+	@bash .githooks/install.sh
 	@echo "\n✅ Project ready!"
 	@echo "   API:      http://api.maisvendas.localhost"
 	@echo "   Traefik:  http://localhost:8080"
@@ -69,7 +71,10 @@ lint-check: ## Check code style (no fix)
 analyse: ## Run static analysis
 	docker compose exec app vendor/bin/phpstan analyse
 
-check: lint-check analyse test ## Run all checks (lint + analyse + test)
+check: lint-check analyse test-coverage ## Run all checks (lint + analyse + test + min 80% coverage)
+
+hooks: ## Install git hooks for local validation
+	@bash .githooks/install.sh
 
 # ── Database ────────────────────────────────
 
@@ -117,6 +122,7 @@ local-setup: ## Setup for local development (without Docker)
 	composer install
 	php artisan key:generate
 	php artisan migrate
+	@bash .githooks/install.sh
 	@echo "\n✅ Run 'php artisan serve' to start"
 
 local-test: ## Run tests locally

@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Bypass: SKIP_HOOKS=1 git commit
+[[ "${SKIP_HOOKS:-0}" == "1" ]] && exit 0
+
+# Verifica se há arquivos .php staged
+STAGED_PHP=$(git diff --cached --name-only --diff-filter=ACMR -- '*.php' || true)
+if [[ -z "$STAGED_PHP" ]]; then
+    exit 0
+fi
+
+echo "🔍 pre-commit: validando arquivos PHP..."
+
+# Detecta ambiente: Docker ou local
+if docker compose ps --status running 2>/dev/null | grep -q 'app'; then
+    RUN="docker compose exec -T app"
+else
+    RUN=""
+fi
+
+FAILED=0
+
+# Pint (code style) - apenas nos arquivos staged
+echo "  → Pint (code style)..."
+if ! echo "$STAGED_PHP" | xargs $RUN vendor/bin/pint --test 2>&1; then
+    echo ""
+    echo "  ✗ Pint falhou. Corrija com:"
+    echo "    $RUN vendor/bin/pint"
+    echo ""
+    FAILED=1
+fi
+
+# PHPStan (static analysis)
+echo "  → PHPStan (análise estática)..."
+if ! $RUN vendor/bin/phpstan analyse 2>&1; then
+    echo ""
+    echo "  ✗ PHPStan encontrou erros."
+    echo ""
+    FAILED=1
+fi
+
+if [[ $FAILED -eq 1 ]]; then
+    echo "❌ pre-commit falhou. Corrija os erros acima."
+    echo "   Bypass de emergência: SKIP_HOOKS=1 git commit ..."
+    exit 1
+fi
+
+echo "✅ pre-commit OK"
