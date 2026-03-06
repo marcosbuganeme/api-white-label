@@ -1,6 +1,6 @@
 FROM php:8.5.3-fpm-bookworm AS base
 
-LABEL maintainer="MaisVendas <molavosbdeveloper@gmail.com>"
+LABEL maintainer="MaisVendas <dev@maisvendas.com>"
 
 ARG WWWGROUP=1000
 ARG WWWUSER=1000
@@ -56,6 +56,10 @@ RUN docker-php-ext-configure gd --with-freetype --with-jpeg \
         sockets
 
 # PECL extensions (pinned versions for reproducible builds, PHP 8.5 compatible)
+# Dependabot cannot track PECL versions. Check manually:
+#   https://pecl.php.net/package/redis
+#   https://pecl.php.net/package/mongodb
+#   https://pecl.php.net/package/amqp
 RUN pecl install redis-6.3.0 mongodb-2.2.1 amqp-2.2.0 \
     && docker-php-ext-enable redis mongodb amqp
 

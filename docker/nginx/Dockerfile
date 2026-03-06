@@ -1,6 +1,6 @@
 FROM nginx:1.29.5-alpine
 
-LABEL maintainer="MaisVendas <molavosbdeveloper@gmail.com>"
+LABEL maintainer="MaisVendas <dev@maisvendas.com>"
 
 # Install curl for healthcheck and remove default config
 RUN apk add --no-cache curl \
