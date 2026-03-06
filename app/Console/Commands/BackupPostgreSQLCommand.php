@@ -80,8 +80,9 @@ class BackupPostgreSQLCommand extends Command
             }
 
             if ($result->failed()) {
-                $this->error('pg_dump falhou: '.$result->errorOutput());
-                Log::error('Backup PostgreSQL falhou', ['error' => $result->errorOutput()]);
+                $sanitized = preg_replace('/password[=:]\s*\S+/i', 'password=***', $result->errorOutput()) ?? $result->errorOutput();
+                $this->error('pg_dump falhou: '.$sanitized);
+                Log::error('Backup PostgreSQL falhou', ['error' => $sanitized]);
 
                 return self::FAILURE;
             }

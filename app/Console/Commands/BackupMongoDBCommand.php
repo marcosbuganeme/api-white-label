@@ -69,8 +69,9 @@ class BackupMongoDBCommand extends Command
             }
 
             if ($result->failed()) {
-                $this->error('mongodump falhou: '.$result->errorOutput());
-                Log::error('Backup MongoDB falhou', ['error' => $result->errorOutput()]);
+                $sanitized = preg_replace('/password[=:]\s*\S+/i', 'password=***', $result->errorOutput()) ?? $result->errorOutput();
+                $this->error('mongodump falhou: '.$sanitized);
+                Log::error('Backup MongoDB falhou', ['error' => $sanitized]);
 
                 return self::FAILURE;
             }
