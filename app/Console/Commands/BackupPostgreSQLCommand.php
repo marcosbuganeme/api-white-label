@@ -102,7 +102,8 @@ class BackupPostgreSQLCommand extends Command
                 fclose($stream);
             }
 
-            $size = round((int) filesize($tempFile) / 1024 / 1024, 2);
+            $rawSize = filesize($tempFile);
+            $size = $rawSize !== false ? round($rawSize / 1024 / 1024, 2) : 0.0;
 
             $this->info("Backup enviado com sucesso: {$remotePath} ({$size} MB)");
             Log::info('Backup PostgreSQL concluído', [

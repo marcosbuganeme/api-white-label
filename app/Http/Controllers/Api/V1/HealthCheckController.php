@@ -135,7 +135,12 @@ class HealthCheckController extends Controller
                 $testKey = '.health-check-'.bin2hex(random_bytes(4));
 
                 $disk->put($testKey, 'ok');
-                $disk->delete($testKey);
+
+                try {
+                    $disk->delete($testKey);
+                } catch (\Throwable) {
+                    // Best-effort cleanup: objeto pode ficar órfão no Spaces em caso de falha
+                }
 
                 return ['status' => 'up', 'disk' => $diskName];
             });

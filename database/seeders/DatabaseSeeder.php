@@ -25,7 +25,7 @@ class DatabaseSeeder extends Seeder
             ['email' => 'test@example.com'],
             [
                 'name' => 'Test User',
-                'password' => bcrypt('password'),
+                'password' => 'password', // Cast 'hashed' do model User faz o hash automaticamente
             ],
         );
     }

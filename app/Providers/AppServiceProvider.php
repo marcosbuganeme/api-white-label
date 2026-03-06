@@ -35,7 +35,11 @@ class AppServiceProvider extends ServiceProvider
             && empty(config('cors.allowed_origins'))
             && empty(config('cors.allowed_origins_patterns'))
         ) {
-            Log::warning('CORS_ALLOWED_ORIGINS não configurado. Requisições cross-origin de browsers serão rejeitadas.');
+            once(fn () => Log::warning('CORS_ALLOWED_ORIGINS não configurado. Requisições cross-origin de browsers serão rejeitadas.'));
+        }
+
+        if ($this->app->isProduction() && config('database.connections.pgsql.sslmode') === 'prefer') {
+            once(fn () => Log::warning('DB_SSLMODE=prefer em produção. Recomendado: DB_SSLMODE=require para forçar conexões criptografadas.'));
         }
     }
 }
