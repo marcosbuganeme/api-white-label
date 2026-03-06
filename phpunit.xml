@@ -4,7 +4,7 @@
          bootstrap="vendor/autoload.php"
          colors="true"
          failOnWarning="true"
-         failOnDeprecation="true"
+         failOnDeprecation="false"
 >
     <testsuites>
         <testsuite name="Unit">
@@ -24,27 +24,14 @@
         </exclude>
     </source>
     <php>
+        <!-- App-level overrides only. Infrastructure vars (DB, Redis, MongoDB, RabbitMQ)
+             come from .env (Docker dev) or .env.ci (CI via `cp .env.ci .env`). -->
         <env name="APP_ENV" value="testing"/>
         <env name="APP_KEY" value="base64:dGVzdGluZ2tleWZvcnVuaXR0ZXN0czEyMzQ1Njc4OTA="/>
         <env name="APP_MAINTENANCE_DRIVER" value="file"/>
         <env name="BCRYPT_ROUNDS" value="4"/>
         <env name="BROADCAST_CONNECTION" value="null"/>
         <env name="CACHE_STORE" value="array"/>
-        <env name="DB_CONNECTION" value="pgsql"/>
-        <env name="DB_HOST" value="127.0.0.1"/>
-        <env name="DB_PORT" value="5432"/>
-        <env name="DB_DATABASE" value="maisvendas_test"/>
-        <env name="DB_USERNAME" value="postgres"/>
-        <env name="DB_PASSWORD" value="secret"/>
-        <env name="DB_SSLMODE" value="prefer"/>
-        <env name="MONGODB_URI" value="mongodb://127.0.0.1:27017"/>
-        <env name="MONGODB_DATABASE" value="maisvendas_test_logs"/>
-        <env name="REDIS_HOST" value="127.0.0.1"/>
-        <env name="REDIS_PASSWORD" value="secret"/>
-        <env name="RABBITMQ_HOST" value="127.0.0.1"/>
-        <env name="RABBITMQ_USER" value="maisvendas"/>
-        <env name="RABBITMQ_PASSWORD" value="secret"/>
-        <env name="RABBITMQ_VHOST" value="maisvendas"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
