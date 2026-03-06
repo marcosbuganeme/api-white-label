@@ -20,7 +20,7 @@
         </include>
         <exclude>
             <directory>app/Providers</directory>
-            <directory>app/Models</directory>
+            <file>app/Models/User.php</file>
         </exclude>
     </source>
     <php>
@@ -40,7 +40,7 @@
         <env name="MONGODB_URI" value="mongodb://127.0.0.1:27017"/>
         <env name="MONGODB_DATABASE" value="maisvendas_test_logs"/>
         <env name="REDIS_HOST" value="127.0.0.1"/>
-        <env name="REDIS_PASSWORD" value=""/>
+        <env name="REDIS_PASSWORD" value="secret"/>
         <env name="RABBITMQ_HOST" value="127.0.0.1"/>
         <env name="RABBITMQ_USER" value="maisvendas"/>
         <env name="RABBITMQ_PASSWORD" value="secret"/>
