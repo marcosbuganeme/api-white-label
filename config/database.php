@@ -93,7 +93,7 @@ return [
             'password' => env('REDIS_PASSWORD'),
             'port' => env('REDIS_PORT', '6379'),
             'database' => env('REDIS_QUEUE_DB', '3'),
-            'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_queue_'),
+            'prefix' => env('REDIS_QUEUE_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_queue_'),
         ],
 
     ],
