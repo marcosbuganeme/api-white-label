@@ -32,12 +32,16 @@ class ExampleTest extends TestCase
             ]);
     }
 
-    public function test_health_check_is_not_rate_limited(): void
+    public function test_health_check_has_dedicated_throttle(): void
     {
-        for ($i = 0; $i < 65; $i++) {
-            $response = $this->getJson('/api/health');
-            $this->assertNotEquals(429, $response->getStatusCode(), "Request #{$i} was rate limited");
-        }
+        $route = app('router')->getRoutes()->getByName('health');
+        $this->assertNotNull($route);
+
+        $excluded = $route->excludedMiddleware();
+        $this->assertContains('throttle:api', $excluded);
+
+        $middleware = $route->middleware();
+        $this->assertContains('throttle:health', $middleware);
     }
 
     public function test_health_check_shows_debug_info_in_local_env(): void
@@ -58,6 +62,16 @@ class ExampleTest extends TestCase
     {
         $response = $this->getJson('/api/health');
 
+        $response->assertJsonMissingPath('services.app.php');
+        $response->assertJsonMissingPath('services.app.laravel');
+    }
+
+    public function test_health_check_shows_services_but_not_debug_in_testing_env(): void
+    {
+        // APP_ENV is already 'testing' from phpunit.xml
+        $response = $this->getJson('/api/health');
+
+        $response->assertJsonStructure(['services']);
         $response->assertJsonMissingPath('services.app.php');
         $response->assertJsonMissingPath('services.app.laravel');
     }
