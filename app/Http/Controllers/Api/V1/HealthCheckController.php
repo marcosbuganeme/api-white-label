@@ -132,15 +132,10 @@ class HealthCheckController extends Controller
             /** @var array<string, string> $result */
             $result = Cache::remember('health:storage', 60, function () use ($diskName): array {
                 $disk = Storage::disk($diskName);
-                $testKey = '.health-check-'.bin2hex(random_bytes(4));
+                $testKey = '.health-check';
 
                 $disk->put($testKey, 'ok');
-
-                try {
-                    $disk->delete($testKey);
-                } catch (\Throwable) {
-                    // Best-effort cleanup: objeto pode ficar órfão no Spaces em caso de falha
-                }
+                $disk->delete($testKey);
 
                 return ['status' => 'up', 'disk' => $diskName];
             });
