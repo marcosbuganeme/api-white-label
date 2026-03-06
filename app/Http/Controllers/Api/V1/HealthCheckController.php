@@ -30,9 +30,9 @@ class HealthCheckController extends Controller
             'timestamp' => now()->toIso8601String(),
         ];
 
-        // Only expose service details in local/testing environments.
-        // In production, the status alone prevents infrastructure topology leakage.
-        if (app()->environment('local', 'testing')) {
+        // Only expose service details in local environment.
+        // In production/staging/testing, the status alone prevents infrastructure topology leakage.
+        if (app()->environment('local')) {
             $response['services'] = $checks;
         }
 
@@ -114,7 +114,7 @@ class HealthCheckController extends Controller
             }
 
             $result = $this->probeRabbitMQ();
-            $ttl = $result['status'] === 'up' ? 10 : 5;
+            $ttl = $result['status'] === 'up' ? 10 : 30;
             Cache::put('health:rabbitmq', $result, $ttl);
 
             return $result;
