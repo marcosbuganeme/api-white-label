@@ -62,19 +62,31 @@
       "name": "processing.failed",
       "vhost": "maisvendas",
       "durable": true,
-      "auto_delete": false
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 604800000,
+        "x-max-length": 10000
+      }
     },
     {
       "name": "data_crossref.failed",
       "vhost": "maisvendas",
       "durable": true,
-      "auto_delete": false
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 604800000,
+        "x-max-length": 10000
+      }
     },
     {
       "name": "reports.failed",
       "vhost": "maisvendas",
       "durable": true,
-      "auto_delete": false
+      "auto_delete": false,
+      "arguments": {
+        "x-message-ttl": 604800000,
+        "x-max-length": 10000
+      }
     }
   ],
   "bindings": [

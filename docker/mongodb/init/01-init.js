@@ -27,4 +27,12 @@ db.createCollection('metrics');
 // -- Processed Data Collection --
 db.createCollection('processed_data');
 
-print('MongoDB initialized: collections created (indexes managed by Laravel migrations)');
+// Fallback TTL index: auto-remove logs older than 90 days.
+// Laravel migrations may override with more specific indexes, but this ensures
+// logs don't grow unbounded even if migrations haven't run yet.
+db.logs.createIndex(
+  { "logged_at": 1 },
+  { expireAfterSeconds: 7776000, background: true }
+);
+
+print('MongoDB initialized: collections created, fallback TTL index on logs (indexes managed by Laravel migrations)');

@@ -15,7 +15,7 @@ help: ## Show available commands
 setup: ## First-time project setup (Docker)
 	@[ -f .env ] || cp .env.example .env
 	docker compose build
-	docker compose up -d
+	docker compose up -d --wait
 	docker compose exec app composer install
 	docker compose exec app bash -c 'grep -q "^APP_KEY=$$" .env && php artisan key:generate || echo "APP_KEY already set, skipping."'
 	docker compose exec app php artisan migrate
