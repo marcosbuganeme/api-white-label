@@ -43,19 +43,19 @@ jobs:
 
             TOTAL=$(echo "$RESULT" | jq 'length')
             if [ "$TOTAL" -eq 0 ]; then
-              if [ "$i" -gt 6 ]; then
+              if [ "$i" -gt 24 ]; then
                 echo "::error::No CI checks found for commit $COMMIT_SHA after $i attempts."
                 echo "::error::Ensure CI ran on this commit before creating a release tag."
                 exit 1
               fi
-              echo "Attempt $i/30: no CI checks found yet, waiting 10s..."
+              echo "Attempt $i/120: no CI checks found yet, waiting 10s..."
               sleep 10
               continue
             fi
 
             PENDING=$(echo "$RESULT" | jq '[.[] | select(.status != "completed")] | length')
             if [ "$PENDING" -gt 0 ]; then
-              echo "Attempt $i/30: $PENDING check(s) still running, waiting 10s..."
+              echo "Attempt $i/120: $PENDING check(s) still running, waiting 10s..."
               sleep 10
               continue
             fi
@@ -127,7 +127,7 @@ jobs:
           sbom: true
 
       - name: Build and push nginx
-        uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f0b7a4 # v6.15.0
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198e19c3bc6fbf # v6.18.0
         with:
           context: .
           file: docker/nginx/Dockerfile
