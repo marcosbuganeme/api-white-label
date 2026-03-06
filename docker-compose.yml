@@ -236,6 +236,8 @@ services:
     image: postgres:17.9-alpine
     container_name: maisvendas-postgres
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     ports:
       - "127.0.0.1:${DB_EXTERNAL_PORT:-5432}:5432"
     environment:
@@ -252,6 +254,7 @@ services:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d ${DB_DATABASE:-maisvendas}"]
       interval: 5s
       timeout: 5s
+      start_period: 30s
       retries: 5
     command: >
       postgres
@@ -272,6 +275,8 @@ services:
     image: redis:7.4.8-alpine
     container_name: maisvendas-redis
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     ports:
       - "127.0.0.1:${REDIS_EXTERNAL_PORT:-6379}:6379"
     command: >
@@ -304,6 +309,8 @@ services:
     image: mongo:8.0.19
     container_name: maisvendas-mongodb
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     ports:
       - "127.0.0.1:${MONGO_EXTERNAL_PORT:-27017}:27017"
     environment:
@@ -319,6 +326,7 @@ services:
       test: ["CMD-SHELL", "mongosh -u \"$$MONGO_INITDB_ROOT_USERNAME\" -p \"$$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin --eval \"db.adminCommand('ping')\" --quiet"]
       interval: 10s
       timeout: 5s
+      start_period: 30s
       retries: 5
 
   # ──────────────────────────────────────────────
@@ -328,6 +336,8 @@ services:
     image: rabbitmq:4.2.4-management-alpine
     container_name: maisvendas-rabbitmq
     restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
     ports:
       - "127.0.0.1:${RABBITMQ_PORT:-5672}:5672"
       - "127.0.0.1:${RABBITMQ_MANAGEMENT_PORT:-15672}:15672"
