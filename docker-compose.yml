@@ -38,7 +38,7 @@ services:
   # EDGE PROXY - Traefik
   # ──────────────────────────────────────────────
   traefik:
-    image: traefik:v3.3.7
+    image: traefik:v3.6.10
     container_name: maisvendas-traefik
     restart: unless-stopped
     security_opt:
@@ -366,9 +366,12 @@ services:
       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER:?RABBITMQ_USER is required}
       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD:?RABBITMQ_PASSWORD is required}
       RABBITMQ_DEFAULT_VHOST: ${RABBITMQ_VHOST:-maisvendas}
+    entrypoint: ["/usr/local/bin/rabbitmq-entrypoint.sh"]
+    command: ["rabbitmq-server"]
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
-      - ./docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+      - ./docker/rabbitmq/entrypoint.sh:/usr/local/bin/rabbitmq-entrypoint.sh:ro
+      - ./docker/rabbitmq/definitions.template.json:/etc/rabbitmq/definitions.template.json:ro
       - ./docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
     networks:
       - maisvendas
