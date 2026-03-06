@@ -27,7 +27,7 @@ class BackupMongoDBCommand extends Command
         $filename = "{$day}-{$month}-{$year}-maisvendas.gz";
         $remotePath = "mongodb/{$day}/{$month}/{$year}/{$filename}";
 
-        $tempDir = '/tmp/mongodb-backup';
+        $tempDir = sys_get_temp_dir().'/mongodb-backup-'.bin2hex(random_bytes(4));
         $tempFile = "{$tempDir}/{$filename}";
 
         $this->info("Iniciando backup do MongoDB: {$remotePath}");
@@ -53,7 +53,7 @@ class BackupMongoDBCommand extends Command
                 return self::FAILURE;
             }
             chmod($tempConfig, 0600);
-            file_put_contents($tempConfig, "uri: \"{$uri}\"\n");
+            file_put_contents($tempConfig, 'uri: '.json_encode($uri)."\n");
 
             try {
                 $result = Process::timeout(300)->run([
