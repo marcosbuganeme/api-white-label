@@ -25,6 +25,8 @@ docker/traefik
 docker/rabbitmq
 docker/postgres
 docker/mongodb
+docker/app/scripts
+docker/app/Dockerfile
 .phpstan
 coverage
 Makefile
