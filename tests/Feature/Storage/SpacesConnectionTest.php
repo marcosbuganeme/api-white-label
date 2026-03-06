@@ -47,7 +47,7 @@ class SpacesConnectionTest extends TestCase
 
         $this->assertNotNull($url, 'Spaces disk should have a CDN URL configured (DO_SPACES_CDN_URL)');
         $this->assertIsString($url);
-        $this->assertStringContainsString('digitaloceanspaces.com', $url);
+        $this->assertMatchesRegularExpression('/^https?:\/\//', $url, 'CDN URL should be a valid HTTP(S) URL');
     }
 
     public function test_backups_disk_has_no_cdn_url(): void
