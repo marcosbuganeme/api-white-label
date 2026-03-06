@@ -41,12 +41,3 @@ db.processed_data.createIndex({ 'type': 1, 'processed_at': -1 });
 db.processed_data.createIndex({ 'source_id': 1 }, { sparse: true });
 
 print('MongoDB initialized: collections and indexes created');
-
-// Create application user with least-privilege access
-db.getSiblingDB('admin').createUser({
-  user: 'maisvendas_app',
-  pwd: process.env.MONGODB_APP_PASSWORD || 'changeme',
-  roles: [
-    { role: 'readWrite', db: 'maisvendas_logs' }
-  ]
-});
