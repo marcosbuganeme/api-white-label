@@ -14,13 +14,32 @@ for dir in "${dirs[@]}"; do
     mkdir -p "$dir" 2>/dev/null || true
 done
 
-# Fix ownership if volumes were mounted as root (common with named volumes on first deploy)
-if [ ! -w /var/www/html/storage ]; then
-    echo "WARNING: storage not writable by appuser. Attempting fix..."
-    echo "Run 'chown -R $(id -u):$(id -g) /var/www/html/storage' from a root shell if this persists."
+# Fix ownership if running as root (production entrypoint)
+if [ "$(id -u)" = "0" ]; then
+    chown -R appuser:appuser /var/www/html/storage /var/www/html/bootstrap/cache 2>/dev/null || true
+
+    # Runtime caching (depends on environment variables available only at runtime)
+    if [ "$APP_ENV" = "production" ] || [ "$APP_ENV" = "staging" ]; then
+        echo "Running optimizations for $APP_ENV (role: ${CONTAINER_ROLE:-app})..."
+
+        case "${CONTAINER_ROLE:-app}" in
+            app)
+                gosu appuser php artisan config:cache
+                gosu appuser php artisan event:cache
+                gosu appuser php artisan route:cache
+                gosu appuser php artisan view:cache
+                ;;
+            horizon|rabbitmq-worker|scheduler)
+                gosu appuser php artisan config:cache
+                gosu appuser php artisan event:cache
+                ;;
+        esac
+    fi
+
+    exec gosu appuser "$@"
 fi
 
-# Runtime caching (depends on environment variables available only at runtime)
+# Running as non-root (development) - run caching directly
 if [ "$APP_ENV" = "production" ] || [ "$APP_ENV" = "staging" ]; then
     echo "Running optimizations for $APP_ENV (role: ${CONTAINER_ROLE:-app})..."
 
@@ -31,11 +50,7 @@ if [ "$APP_ENV" = "production" ] || [ "$APP_ENV" = "staging" ]; then
             php artisan route:cache
             php artisan view:cache
             ;;
-        horizon|rabbitmq-worker)
-            php artisan config:cache
-            php artisan event:cache
-            ;;
-        scheduler)
+        horizon|rabbitmq-worker|scheduler)
             php artisan config:cache
             php artisan event:cache
             ;;

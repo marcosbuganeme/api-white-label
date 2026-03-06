@@ -36,6 +36,7 @@ RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
     pkg-config \
     postgresql-client-17 \
     mongodb-database-tools \
+    gosu \
     && rm -rf /var/lib/apt/lists/*
 
 # php-fpm-healthcheck (pinned to v0.5.0)
@@ -114,14 +115,12 @@ COPY --chown=appuser:appuser . /var/www/html
 RUN composer run-script post-autoload-dump \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
 
-# Entrypoint for runtime caching (route, view, config, event)
+# Entrypoint: runs as root, fixes ownership, drops to appuser via gosu
 COPY docker/app/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-USER appuser
-
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
-    CMD php-fpm-healthcheck || exit 1
+    CMD gosu appuser php-fpm-healthcheck || exit 1
 
 EXPOSE 9000
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
