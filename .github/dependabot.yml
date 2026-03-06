@@ -63,6 +63,15 @@ updates:
     open-pull-requests-limit: 5
     commit-message:
       prefix: "docker"
+    ignore:
+      - dependency-name: "postgres"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "mongo"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "redis"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "rabbitmq"
+        update-types: ["version-update:semver-major"]
     reviewers:
       - "marcosbuganeme"
     assignees:
