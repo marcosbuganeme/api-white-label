@@ -27,7 +27,7 @@ class BackupPostgreSQLCommand extends Command
         $filename = "{$day}-{$month}-{$year}-maisvendas.sql";
         $remotePath = "postgresql/{$day}/{$month}/{$year}/{$filename}";
 
-        $tempDir = '/tmp/pgsql-backup';
+        $tempDir = sys_get_temp_dir().'/pgsql-backup-'.bin2hex(random_bytes(4));
         $tempFile = "{$tempDir}/{$filename}";
 
         $this->info("Iniciando backup do PostgreSQL: {$remotePath}");
@@ -50,18 +50,34 @@ class BackupPostgreSQLCommand extends Command
                 return self::FAILURE;
             }
 
-            $result = Process::timeout(300)
-                ->env(['PGPASSWORD' => $password])
-                ->run([
-                    'pg_dump',
-                    '-h', $host,
-                    '-p', $port,
-                    '-U', $username,
-                    '--format=c',
-                    '--compress=6',
-                    '-f', $tempFile,
-                    $database,
-                ]);
+            $pgpassFile = tempnam(sys_get_temp_dir(), 'pgpass_');
+            if ($pgpassFile === false) {
+                $this->error('Falha ao criar arquivo .pgpass temporário.');
+
+                return self::FAILURE;
+            }
+            chmod($pgpassFile, 0600);
+            file_put_contents($pgpassFile, "{$host}:{$port}:{$database}:{$username}:{$password}\n");
+
+            try {
+                $result = Process::timeout(300)
+                    ->env(['PGPASSFILE' => $pgpassFile])
+                    ->run([
+                        'pg_dump',
+                        '-h', $host,
+                        '-p', $port,
+                        '-U', $username,
+                        '--no-password',
+                        '--format=c',
+                        '--compress=6',
+                        '-f', $tempFile,
+                        $database,
+                    ]);
+            } finally {
+                if (file_exists($pgpassFile)) {
+                    unlink($pgpassFile);
+                }
+            }
 
             if ($result->failed()) {
                 $this->error('pg_dump falhou: '.$result->errorOutput());
