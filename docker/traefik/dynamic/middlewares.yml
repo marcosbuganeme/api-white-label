@@ -36,13 +36,6 @@ http:
         scheme: https
         permanent: true
 
-    # Basic auth for RabbitMQ management UI
-    # Generate: htpasswd -nB admin
-    rabbitmq-auth:
-      basicAuth:
-        users:
-          - "${RABBITMQ_MGMT_HTPASSWD}"
-
     # Chain of middlewares for API (HTTPS)
     api-chain:
       chain:

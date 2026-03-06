@@ -348,10 +348,19 @@ services:
       retries: 5
     labels:
       - "traefik.enable=true"
+      # BasicAuth middleware defined via Docker label (env var interpolation works here, unlike file provider)
+      # Generate hash: htpasswd -nB admin
+      - "traefik.http.middlewares.rabbitmq-auth.basicauth.users=${RABBITMQ_MGMT_HTPASSWD}"
+      # HTTP router (dev only)
       - "traefik.http.routers.rabbitmq.rule=Host(`rabbitmq.maisvendas.localhost`)"
       - "traefik.http.routers.rabbitmq.entrypoints=web"
-      - "traefik.http.routers.rabbitmq.middlewares=rabbitmq-auth@file"
+      - "traefik.http.routers.rabbitmq.middlewares=rabbitmq-auth"
       - "traefik.http.services.rabbitmq.loadbalancer.server.port=15672"
+      # HTTPS router (production - redirect HTTP to HTTPS + TLS)
+      - "traefik.http.routers.rabbitmq-secure.rule=Host(`rabbitmq.${APP_DOMAIN:-maisvendas.localhost}`)"
+      - "traefik.http.routers.rabbitmq-secure.entrypoints=websecure"
+      - "traefik.http.routers.rabbitmq-secure.tls.certresolver=letsencrypt"
+      - "traefik.http.routers.rabbitmq-secure.middlewares=rabbitmq-auth"
 
 volumes:
   postgres_data:
