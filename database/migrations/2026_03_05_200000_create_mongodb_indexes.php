@@ -33,18 +33,22 @@ return new class extends Migration
         /** @var \MongoDB\Laravel\Connection $mongo */
         $mongo = DB::connection('mongodb');
 
-        $logs = $mongo->getMongoDB()->selectCollection('logs');
-        $logs->dropIndex('level_logged_at');
-        $logs->dropIndex('channel_logged_at');
-        $logs->dropIndex('logged_at_ttl');
+        $indexes = [
+            'logs' => ['level_logged_at', 'channel_logged_at', 'logged_at_ttl'],
+            'metrics' => ['name_recorded_at', 'recorded_at_ttl'],
+            'processed_data' => ['type_processed_at', 'source_id', 'processed_at_ttl'],
+        ];
 
-        $metrics = $mongo->getMongoDB()->selectCollection('metrics');
-        $metrics->dropIndex('name_recorded_at');
-        $metrics->dropIndex('recorded_at_ttl');
+        foreach ($indexes as $collectionName => $indexNames) {
+            $collection = $mongo->getMongoDB()->selectCollection($collectionName);
 
-        $processed = $mongo->getMongoDB()->selectCollection('processed_data');
-        $processed->dropIndex('type_processed_at');
-        $processed->dropIndex('source_id');
-        $processed->dropIndex('processed_at_ttl');
+            foreach ($indexNames as $indexName) {
+                try {
+                    $collection->dropIndex($indexName);
+                } catch (\Throwable) {
+                    // Index may not exist (first run or partial migration)
+                }
+            }
+        }
     }
 };
