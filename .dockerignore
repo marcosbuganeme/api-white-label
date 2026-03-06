@@ -20,12 +20,11 @@ pint.json
 *.md
 docker-compose.yml
 docker-compose.*.yml
-docker/nginx
 docker/traefik
 docker/rabbitmq
 docker/postgres
 docker/mongodb
-docker/app/scripts
+docker/redis
 docker/app/Dockerfile
 .phpstan
 coverage

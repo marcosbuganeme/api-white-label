@@ -16,7 +16,15 @@ done
 
 # Apply PHP-FPM pm.max_children from environment variable (if set)
 if [ -n "${PHP_FPM_PM_MAX_CHILDREN:-}" ]; then
-    FPM_CONF="/usr/local/etc/php-fpm.d/zz-docker.conf"
+    if ! [[ "${PHP_FPM_PM_MAX_CHILDREN}" =~ ^[0-9]+$ ]]; then
+        echo "ERROR: PHP_FPM_PM_MAX_CHILDREN must be a positive integer, got: '${PHP_FPM_PM_MAX_CHILDREN}'"
+        exit 1
+    fi
+    # Target zz-prod.conf (production override) since it loads after zz-docker.conf alphabetically
+    FPM_CONF="/usr/local/etc/php-fpm.d/zz-prod.conf"
+    if [ ! -f "$FPM_CONF" ]; then
+        FPM_CONF="/usr/local/etc/php-fpm.d/zz-docker.conf"
+    fi
     if [ -f "$FPM_CONF" ]; then
         sed -i "s/^pm\.max_children = .*/pm.max_children = ${PHP_FPM_PM_MAX_CHILDREN}/" "$FPM_CONF"
     fi

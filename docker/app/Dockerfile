@@ -7,7 +7,11 @@ ARG WWWUSER=1000
 
 WORKDIR /var/www/html
 
-# Add GPG keys and external repos first
+# Install gnupg first (needed for GPG key imports below)
+RUN apt-get update && apt-get install -y --no-install-recommends gnupg curl \
+    && rm -rf /var/lib/apt/lists/*
+
+# Add GPG keys and external repos
 RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
         | gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg \
     && echo "deb http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" \
@@ -17,8 +21,6 @@ RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
     && echo "deb [ arch=amd64 ] https://repo.mongodb.org/apt/debian bookworm/mongodb-org/8.0 main" \
         > /etc/apt/sources.list.d/mongodb-org-8.0.list \
     && apt-get update && apt-get install -y --no-install-recommends \
-    curl \
-    gnupg \
     unzip \
     libpq-dev \
     libzip-dev \
@@ -32,10 +34,7 @@ RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
     libssl-dev \
     librabbitmq-dev \
     libfcgi-bin \
-    procps \
     pkg-config \
-    postgresql-client-17 \
-    mongodb-database-tools \
     gosu \
     && rm -rf /var/lib/apt/lists/*
 
@@ -80,7 +79,11 @@ COPY docker/app/conf.d/php-fpm.conf /usr/local/etc/php-fpm.d/zz-docker.conf
 # ─────────────────────────────────────────────
 FROM base AS development
 
-RUN apt-get update && apt-get install -y --no-install-recommends git \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    procps \
+    postgresql-client-17 \
+    mongodb-database-tools \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pecl install xdebug && docker-php-ext-enable xdebug
@@ -123,7 +126,7 @@ RUN composer run-script post-autoload-dump \
 COPY docker/app/entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=3 \
     CMD gosu appuser php-fpm-healthcheck || exit 1
 
 EXPOSE 9000

@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Console\Commands\Concerns\CleansOldBackups;
 use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 
 class BackupPostgreSQLCommand extends Command
 {
+    use CleansOldBackups;
     /** @var string */
     protected $signature = 'backup:pgsql
         {--cleanup : Remover backups antigos após o dump}
@@ -113,7 +115,7 @@ class BackupPostgreSQLCommand extends Command
             ]);
 
             if ($this->option('cleanup')) {
-                $this->cleanup((int) $this->option('keep-days'));
+                $this->cleanupOldBackups('postgresql', (int) $this->option('keep-days'));
             }
 
             return self::SUCCESS;
@@ -129,40 +131,12 @@ class BackupPostgreSQLCommand extends Command
                 unlink($tempFile);
             }
 
-            if (is_dir($tempDir) && count((array) scandir($tempDir)) <= 2) {
-                rmdir($tempDir);
+            if (is_dir($tempDir)) {
+                $entries = scandir($tempDir);
+                if ($entries !== false && count($entries) <= 2) {
+                    rmdir($tempDir);
+                }
             }
         }
-    }
-
-    private function cleanup(int $keepDays): void
-    {
-        if ($keepDays < 1) {
-            $this->error('--keep-days deve ser no mínimo 1.');
-            Log::error('Backup cleanup abortado: keep-days deve ser >= 1', ['keep_days' => $keepDays]);
-
-            return;
-        }
-
-        $this->info("Removendo backups com mais de {$keepDays} dias...");
-
-        $disk = Storage::disk('backups');
-        $cutoff = Carbon::now('America/Sao_Paulo')->subDays($keepDays);
-        $removed = 0;
-
-        /** @var array<int, string> $files */
-        $files = $disk->allFiles('postgresql');
-
-        foreach ($files as $file) {
-            $lastModified = Carbon::createFromTimestamp($disk->lastModified($file));
-
-            if ($lastModified->isBefore($cutoff)) {
-                $disk->delete($file);
-                $removed++;
-            }
-        }
-
-        $this->info("Removidos {$removed} backups antigos.");
-        Log::info('Cleanup de backups PostgreSQL concluído', ['removed' => $removed]);
     }
 }

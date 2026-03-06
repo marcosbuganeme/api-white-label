@@ -64,14 +64,14 @@ class BackupCommandsTest extends TestCase
     {
         $command = new \App\Console\Commands\BackupMongoDBCommand;
 
-        $method = new \ReflectionMethod($command, 'cleanup');
+        $method = new \ReflectionMethod($command, 'cleanupOldBackups');
         $output = new \Symfony\Component\Console\Output\BufferedOutput;
         $command->setOutput(new \Illuminate\Console\OutputStyle(
             new \Symfony\Component\Console\Input\ArrayInput([]),
             $output,
         ));
 
-        $method->invoke($command, 0);
+        $method->invoke($command, 'mongodb', 0);
 
         $this->assertStringContainsString('mínimo 1', $output->fetch());
     }
@@ -80,14 +80,14 @@ class BackupCommandsTest extends TestCase
     {
         $command = new \App\Console\Commands\BackupPostgreSQLCommand;
 
-        $method = new \ReflectionMethod($command, 'cleanup');
+        $method = new \ReflectionMethod($command, 'cleanupOldBackups');
         $output = new \Symfony\Component\Console\Output\BufferedOutput;
         $command->setOutput(new \Illuminate\Console\OutputStyle(
             new \Symfony\Component\Console\Input\ArrayInput([]),
             $output,
         ));
 
-        $method->invoke($command, 0);
+        $method->invoke($command, 'postgresql', 0);
 
         $this->assertStringContainsString('mínimo 1', $output->fetch());
     }

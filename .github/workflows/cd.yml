@@ -35,7 +35,7 @@ jobs:
           # Retry up to 90 times (15 min) waiting for checks to finish
           for i in $(seq 1 90); do
             RESULT=$(gh api "repos/$REPO/commits/$COMMIT_SHA/check-runs" \
-              --jq '.check_runs | map(select(.name != "ci-gate"))' 2>&1) || {
+              --jq '.check_runs | map(select(.name != "CI Gate"))' 2>&1) || {
               echo "::warning::gh api call failed: $RESULT"
               sleep 10
               continue

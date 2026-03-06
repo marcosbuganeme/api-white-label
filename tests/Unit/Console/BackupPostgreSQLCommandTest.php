@@ -115,8 +115,8 @@ class BackupPostgreSQLCommandTest extends TestCase
             $output,
         ));
 
-        $method = new \ReflectionMethod($cmd, 'cleanup');
-        $method->invoke($cmd, 7);
+        $method = new \ReflectionMethod($cmd, 'cleanupOldBackups');
+        $method->invoke($cmd, 'postgresql', 7);
 
         $this->assertStringContainsString('Removidos 1 backups antigos', $output->fetch());
         $this->assertEmpty($disk->allFiles('postgresql'));

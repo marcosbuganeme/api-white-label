@@ -118,7 +118,11 @@ class HealthCheckController extends Controller
             Cache::put('health:rabbitmq', $result, $ttl);
 
             return $result;
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            Log::debug('Health check: RabbitMQ cache read failed, falling back to probe', [
+                'error' => class_basename($e).': '.$e->getMessage(),
+            ]);
+
             return $this->probeRabbitMQ();
         }
     }

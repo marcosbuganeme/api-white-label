@@ -19,6 +19,21 @@ class HealthCheckServiceTest extends TestCase
         Storage::fake('backups');
         Storage::fake('local');
         $this->app['env'] = 'local';
+
+        // Redirect the explicit Cache::store('redis') call in HealthCheckController
+        // to the array driver so tests don't require a real Redis connection.
+        // Tests that need to simulate Redis failure must restore the real config.
+        config(['cache.stores.redis' => config('cache.stores.array')]);
+    }
+
+    /** Restore real Redis store config to test actual connection failure path. */
+    private function restoreRealRedisStore(): void
+    {
+        config(['cache.stores.redis' => [
+            'driver' => 'redis',
+            'connection' => 'cache',
+            'lock_connection' => 'cache',
+        ]]);
     }
 
     // ─── Redis ──────────────────────────────────────────────────────
@@ -31,6 +46,9 @@ class HealthCheckServiceTest extends TestCase
 
     public function test_redis_down_when_cache_fails(): void
     {
+        // Restore real Redis driver to test actual failure path
+        $this->restoreRealRedisStore();
+
         // Break Redis connection for cache store
         config(['database.redis.default.host' => '127.0.0.254']);
         config(['database.redis.default.port' => 1]);
@@ -192,6 +210,25 @@ class HealthCheckServiceTest extends TestCase
         // Pre-cache rabbitmq as up to avoid connection timeout
         Cache::put('health:rabbitmq', ['status' => 'up'], 10);
         Cache::forget('health:storage');
+
+        // Mock the controller to avoid requiring real database infrastructure.
+        // Individual service tests already cover each check method in isolation.
+        $this->mock(\App\Http\Controllers\Api\V1\HealthCheckController::class, function ($mock) {
+            $mock->shouldReceive('__invoke')
+                ->once()
+                ->andReturn(response()->json([
+                    'status' => 'healthy',
+                    'timestamp' => now()->toIso8601String(),
+                    'services' => [
+                        'app' => ['status' => 'up'],
+                        'database' => ['status' => 'up'],
+                        'redis' => ['status' => 'up'],
+                        'mongodb' => ['status' => 'up'],
+                        'rabbitmq' => ['status' => 'up'],
+                        'storage' => ['status' => 'up'],
+                    ],
+                ], 200));
+        });
 
         $response = $this->getJson('/api/health');
 

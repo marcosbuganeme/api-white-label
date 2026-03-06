@@ -15,6 +15,26 @@
 
 services:
   # ──────────────────────────────────────────────
+  # DOCKER SOCKET PROXY - Limits Docker API access for Traefik
+  # ──────────────────────────────────────────────
+  docker-socket-proxy:
+    image: tecnativa/docker-socket-proxy:0.3.0
+    container_name: maisvendas-docker-proxy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      CONTAINERS: 1
+      NETWORKS: 1
+      SERVICES: 1
+      TASKS: 0
+      POST: 0
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - maisvendas
+
+  # ──────────────────────────────────────────────
   # EDGE PROXY - Traefik
   # ──────────────────────────────────────────────
   traefik:
@@ -23,12 +43,13 @@ services:
     restart: unless-stopped
     security_opt:
       - no-new-privileges:true
+    depends_on:
+      - docker-socket-proxy
     ports:
       - "${TRAEFIK_HTTP_PORT:-80}:80"
       - "${TRAEFIK_HTTPS_PORT:-443}:443"
       - "127.0.0.1:${TRAEFIK_DASHBOARD_PORT:-8080}:8080"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock:ro
       - ./docker/traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./docker/traefik/dynamic:/etc/traefik/dynamic:ro
       - traefik_letsencrypt:/letsencrypt
@@ -100,6 +121,12 @@ services:
       APP_ENV: ${APP_ENV:-local}
       CONTAINER_ROLE: app
       PHP_FPM_PM_MAX_CHILDREN: ${PHP_FPM_PM_MAX_CHILDREN:-50}
+    healthcheck:
+      test: ["CMD-SHELL", "php-fpm-healthcheck || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 30s
+      retries: 3
 
   # ──────────────────────────────────────────────
   # HORIZON - Redis Queue Manager
@@ -279,19 +306,13 @@ services:
       - no-new-privileges:true
     ports:
       - "127.0.0.1:${REDIS_EXTERNAL_PORT:-6379}:6379"
-    command: >
-      redis-server
-        --appendonly yes
-        --maxmemory 512mb
-        --maxmemory-policy allkeys-lru
-        --tcp-backlog 511
-        --timeout 300
-        --tcp-keepalive 60
-        --save 60 1000
-        --save 300 100
-        --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    command:
+      - sh
+      - -c
+      - 'cp /usr/local/etc/redis/redis.conf /tmp/redis.conf && echo "requirepass $$REDIS_PASSWORD" >> /tmp/redis.conf && redis-server /tmp/redis.conf'
     volumes:
       - redis_data:/data
+      - ./docker/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
     networks:
       - maisvendas
     environment:
@@ -361,10 +382,10 @@ services:
       # BasicAuth middleware defined via Docker label (env var interpolation works here, unlike file provider)
       # Generate hash: htpasswd -nB admin
       - "traefik.http.middlewares.rabbitmq-auth.basicauth.users=${RABBITMQ_MGMT_HTPASSWD}"
-      # HTTP router (dev only)
+      # HTTP router (redirects to HTTPS in production, serves directly in dev)
       - "traefik.http.routers.rabbitmq.rule=Host(`rabbitmq.maisvendas.localhost`)"
       - "traefik.http.routers.rabbitmq.entrypoints=web"
-      - "traefik.http.routers.rabbitmq.middlewares=rabbitmq-auth"
+      - "traefik.http.routers.rabbitmq.middlewares=rabbitmq-auth,api-redirect-chain@file"
       - "traefik.http.services.rabbitmq.loadbalancer.server.port=15672"
       # HTTPS router (production - redirect HTTP to HTTPS + TLS)
       - "traefik.http.routers.rabbitmq-secure.rule=Host(`rabbitmq.${APP_DOMAIN:-maisvendas.localhost}`)"

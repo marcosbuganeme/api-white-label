@@ -12,10 +12,10 @@ entryPoints:
   websecure:
     address: ":443"
 
-# Docker provider - auto-discovers services via labels
+# Docker provider via socket proxy (never mount docker.sock directly in Traefik)
 providers:
   docker:
-    endpoint: "unix:///var/run/docker.sock"
+    endpoint: "tcp://docker-socket-proxy:2375"
     exposedByDefault: false
     network: maisvendas
     watch: true
