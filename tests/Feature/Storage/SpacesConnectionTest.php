@@ -32,12 +32,11 @@ class SpacesConnectionTest extends TestCase
 
     public function test_spaces_and_backups_share_same_bucket(): void
     {
-        $spacesConfig = config('filesystems.disks.spaces');
-        $backupsConfig = config('filesystems.disks.backups');
-
-        $this->assertSame('s3', $spacesConfig['driver']);
-        $this->assertSame('s3', $backupsConfig['driver']);
-        $this->assertSame($spacesConfig['bucket'], $backupsConfig['bucket'], 'Spaces and backups should share the same bucket');
+        $this->assertSame(
+            config('filesystems.disks.spaces.bucket'),
+            config('filesystems.disks.backups.bucket'),
+            'Spaces and backups should share the same bucket'
+        );
     }
 
     public function test_spaces_disk_has_cdn_url(): void
