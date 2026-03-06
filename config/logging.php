@@ -17,7 +17,7 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => explode(',', (string) env('LOG_STACK', 'daily,mongodb')),
+            'channels' => array_map('trim', explode(',', (string) env('LOG_STACK', 'daily,mongodb'))),
             'ignore_exceptions' => true,
         ],
 
