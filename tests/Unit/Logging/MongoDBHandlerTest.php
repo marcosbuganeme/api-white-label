@@ -11,6 +11,7 @@ use PHPUnit\Framework\TestCase;
 
 class MongoDBHandlerTest extends TestCase
 {
+    /** @param array<string, mixed> $context */
     private function createRecord(Level $level = Level::Warning, string $message = 'test', array $context = []): LogRecord
     {
         return new LogRecord(
@@ -38,7 +39,7 @@ class MongoDBHandlerTest extends TestCase
         // Reset flag
         $reflection->setValue(null, false);
 
-        $this->assertTrue(true, 'Handler did not throw during recursion guard');
+        $this->addToAssertionCount(1);
     }
 
     public function test_recursion_guard_resets_after_write(): void
@@ -113,6 +114,8 @@ class MongoDBHandlerTest extends TestCase
 
         // Create an object that json_encode will fail on
         $resource = fopen('php://memory', 'r');
+        $this->assertIsResource($resource);
+
         $obj = new class($resource)
         {
             public function __construct(public mixed $handle) {}

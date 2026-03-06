@@ -44,8 +44,9 @@ class BackupCommandsTest extends TestCase
     {
         config(['database.connections.mongodb.dsn' => '']);
 
-        $this->artisan('backup:mongodb')
-            ->expectsOutputToContain('MongoDB URI')
+        /** @var \Illuminate\Testing\PendingCommand $command */
+        $command = $this->artisan('backup:mongodb');
+        $command->expectsOutputToContain('MongoDB URI')
             ->assertExitCode(\Symfony\Component\Console\Command\Command::FAILURE);
     }
 
@@ -53,8 +54,9 @@ class BackupCommandsTest extends TestCase
     {
         config(['database.connections.pgsql.database' => '']);
 
-        $this->artisan('backup:pgsql')
-            ->expectsOutputToContain('não configurado')
+        /** @var \Illuminate\Testing\PendingCommand $command */
+        $command = $this->artisan('backup:pgsql');
+        $command->expectsOutputToContain('não configurado')
             ->assertExitCode(\Symfony\Component\Console\Command\Command::FAILURE);
     }
 

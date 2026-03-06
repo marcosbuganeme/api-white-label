@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
-class ExampleTest extends TestCase
+class HealthCheckTest extends TestCase
 {
     protected function setUp(): void
     {
@@ -13,23 +15,12 @@ class ExampleTest extends TestCase
         Storage::fake('backups');
     }
 
-    public function test_health_check_returns_json_structure(): void
+    public function test_health_check_returns_json_with_status(): void
     {
         $response = $this->getJson('/api/health');
 
         $response->assertHeader('content-type', 'application/json')
-            ->assertJsonStructure([
-                'status',
-                'timestamp',
-                'services' => [
-                    'app' => ['status'],
-                    'database' => ['status'],
-                    'redis' => ['status'],
-                    'mongodb' => ['status'],
-                    'rabbitmq' => ['status'],
-                    'storage' => ['status'],
-                ],
-            ]);
+            ->assertJsonStructure(['status', 'timestamp']);
     }
 
     public function test_health_check_has_dedicated_throttle(): void
@@ -44,7 +35,7 @@ class ExampleTest extends TestCase
         $this->assertContains('throttle:health', $middleware);
     }
 
-    public function test_health_check_shows_debug_info_in_local_env(): void
+    public function test_health_check_shows_services_and_debug_info_in_local_env(): void
     {
         $this->app['env'] = 'local';
 
@@ -53,27 +44,24 @@ class ExampleTest extends TestCase
         $response->assertJsonPath('services.app.status', 'up');
         $response->assertJsonStructure([
             'services' => [
-                'app' => ['php', 'laravel'],
+                'app' => ['status', 'php', 'laravel'],
+                'database' => ['status'],
+                'redis' => ['status'],
+                'mongodb' => ['status'],
+                'rabbitmq' => ['status'],
+                'storage' => ['status'],
             ],
         ]);
     }
 
-    public function test_health_check_hides_debug_info_outside_local_env(): void
+    public function test_health_check_hides_services_in_testing_env(): void
     {
+        $this->app['env'] = 'testing';
+
         $response = $this->getJson('/api/health');
 
-        $response->assertJsonMissingPath('services.app.php');
-        $response->assertJsonMissingPath('services.app.laravel');
-    }
-
-    public function test_health_check_shows_services_but_not_debug_in_testing_env(): void
-    {
-        // APP_ENV is already 'testing' from phpunit.xml
-        $response = $this->getJson('/api/health');
-
-        $response->assertJsonStructure(['services']);
-        $response->assertJsonMissingPath('services.app.php');
-        $response->assertJsonMissingPath('services.app.laravel');
+        $response->assertJsonMissingPath('services');
+        $response->assertJsonStructure(['status', 'timestamp']);
     }
 
     public function test_health_check_hides_services_in_production(): void

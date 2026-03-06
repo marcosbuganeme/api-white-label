@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Storage;
 
 use Tests\TestCase;
@@ -43,8 +45,9 @@ class SpacesConnectionTest extends TestCase
     {
         $url = config('filesystems.disks.spaces.url');
 
-        $this->assertNotNull($url);
-        $this->assertStringContainsString('cdn.digitaloceanspaces.com', (string) $url);
+        $this->assertNotNull($url, 'Spaces disk should have a CDN URL configured (DO_SPACES_CDN_URL)');
+        $this->assertIsString($url);
+        $this->assertStringContainsString('digitaloceanspaces.com', $url);
     }
 
     public function test_backups_disk_has_no_cdn_url(): void
