@@ -1,6 +1,6 @@
 // MongoDB Initialization Script
-// Creates collections with proper indexes for logs, metrics, and processed_data
-// Note: When MONGO_INITDB_ROOT_USERNAME is set, this script runs authenticated as root
+// Creates collections with schema validators only.
+// Indexes are managed by Laravel migrations (database/migrations/*_create_mongodb_indexes.php).
 
 db = db.getSiblingDB('maisvendas_logs');
 
@@ -21,23 +21,10 @@ db.createCollection('logs', {
   }
 });
 
-db.logs.createIndex({ 'logged_at': 1 }, { expireAfterSeconds: 2592000 }); // TTL: 30 days (ascending required for TTL)
-db.logs.createIndex({ 'level': 1, 'logged_at': -1 });
-db.logs.createIndex({ 'channel': 1, 'logged_at': -1 });
-db.logs.createIndex({ 'environment': 1 });
-
 // -- Metrics Collection --
 db.createCollection('metrics');
-
-db.metrics.createIndex({ 'recorded_at': 1 }, { expireAfterSeconds: 7776000 }); // TTL: 90 days (ascending required for TTL)
-db.metrics.createIndex({ 'name': 1, 'recorded_at': -1 });
-db.metrics.createIndex({ 'tags': 1 });
 
 // -- Processed Data Collection --
 db.createCollection('processed_data');
 
-db.processed_data.createIndex({ 'processed_at': 1 });
-db.processed_data.createIndex({ 'type': 1, 'processed_at': -1 });
-db.processed_data.createIndex({ 'source_id': 1 }, { sparse: true });
-
-print('MongoDB initialized: collections and indexes created');
+print('MongoDB initialized: collections created (indexes managed by Laravel migrations)');
