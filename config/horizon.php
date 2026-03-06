@@ -17,7 +17,7 @@ return [
         Str::slug(env('APP_NAME', 'laravel'), '_').'_horizon:'
     ),
 
-    'middleware' => ['web'],
+    'middleware' => ['web', 'auth:sanctum'],
 
     'allowed_emails' => env('HORIZON_ALLOWED_EMAILS', ''),
 
