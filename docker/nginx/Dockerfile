@@ -10,6 +10,10 @@ RUN apk add --no-cache curl \
 COPY docker/nginx/nginx.conf /etc/nginx/nginx.conf
 COPY docker/nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf
 
+# Bake public assets into the image so production deployments always serve
+# fresh assets without relying on named volumes that may retain stale data.
+COPY public /var/www/html/public
+
 # Health check
 HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
     CMD curl -fsS http://localhost/nginx-health || exit 1
