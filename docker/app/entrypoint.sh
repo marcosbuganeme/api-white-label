@@ -28,6 +28,7 @@ if [ "$(id -u)" = "0" ]; then
                 gosu appuser php artisan event:cache
                 gosu appuser php artisan route:cache
                 gosu appuser php artisan view:cache
+                gosu appuser php artisan storage:link --force 2>/dev/null || true
                 ;;
             horizon|rabbitmq-worker|scheduler)
                 gosu appuser php artisan config:cache
@@ -49,6 +50,7 @@ if [ "$APP_ENV" = "production" ] || [ "$APP_ENV" = "staging" ]; then
             php artisan event:cache
             php artisan route:cache
             php artisan view:cache
+            php artisan storage:link --force 2>/dev/null || true
             ;;
         horizon|rabbitmq-worker|scheduler)
             php artisan config:cache

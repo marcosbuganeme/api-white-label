@@ -162,7 +162,7 @@ services:
       redis-server
         --appendonly yes
         --maxmemory 128mb
-        --maxmemory-policy noeviction
+        --maxmemory-policy allkeys-lru
         --tcp-backlog 511
         --timeout 300
         --tcp-keepalive 60
@@ -187,7 +187,7 @@ services:
       mongod
         --wiredTigerCacheSizeGB 0.25
         --auth
-        --bind_ip localhost,mongodb
+        --bind_ip_all
     deploy:
       resources:
         limits:
