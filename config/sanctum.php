@@ -47,7 +47,7 @@ return [
     |
     */
 
-    'expiration' => env('SANCTUM_TOKEN_EXPIRATION', 525600), // 1 year in minutes
+    'expiration' => (int) env('SANCTUM_TOKEN_EXPIRATION', 43200), // 30 days in minutes
 
     /*
     |--------------------------------------------------------------------------
@@ -62,7 +62,7 @@ return [
     |
     */
 
-    'token_prefix' => env('SANCTUM_TOKEN_PREFIX', ''),
+    'token_prefix' => env('SANCTUM_TOKEN_PREFIX', 'mvapi_'),
 
     /*
     |--------------------------------------------------------------------------
