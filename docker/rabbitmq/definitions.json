@@ -2,6 +2,15 @@
   "vhosts": [
     {"name": "maisvendas"}
   ],
+  "permissions": [
+    {
+      "user": "maisvendas",
+      "vhost": "maisvendas",
+      "configure": "^(processing|data_crossref|reports).*",
+      "write": "^(maisvendas\\.processing|maisvendas\\.dlx|processing|data_crossref|reports).*",
+      "read": "^(processing|data_crossref|reports).*"
+    }
+  ],
   "exchanges": [
     {
       "name": "maisvendas.processing",
