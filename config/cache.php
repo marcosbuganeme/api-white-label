@@ -33,14 +33,6 @@ return [
             'lock_connection' => env('REDIS_CACHE_LOCK_CONNECTION', 'default'),
         ],
 
-        'failover' => [
-            'driver' => 'failover',
-            'stores' => [
-                'redis',
-                'database',
-            ],
-        ],
-
     ],
 
     'prefix' => env('CACHE_PREFIX', Str::slug((string) env('APP_NAME', 'laravel'), '_').'_cache_'),
