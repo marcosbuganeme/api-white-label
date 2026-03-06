@@ -1,4 +1,7 @@
-# Traefik Static Configuration
+# Traefik Static Configuration (DEVELOPMENT ONLY)
+# IMPORTANT: insecure: true exposes the Traefik API on :8080 without authentication.
+# This is acceptable in development because docker-compose.yml binds it to 127.0.0.1 only.
+# The production config (traefik.prod.yml) MUST NOT set insecure: true.
 api:
   dashboard: true
   insecure: true
