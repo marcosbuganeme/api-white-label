@@ -8,14 +8,6 @@ use Tests\TestCase;
 
 class BackupCommandsTest extends TestCase
 {
-    /**
-     * Skip database refresh — these tests only check command registration.
-     */
-    public function refreshDatabase(): void
-    {
-        // No database needed for command registration tests
-    }
-
     public function test_mongodb_command_is_registered(): void
     {
         $commands = \Illuminate\Support\Facades\Artisan::all();
@@ -64,5 +56,37 @@ class BackupCommandsTest extends TestCase
         $this->artisan('backup:pgsql')
             ->expectsOutputToContain('não configurado')
             ->assertExitCode(\Symfony\Component\Console\Command\Command::FAILURE);
+    }
+
+    public function test_mongodb_cleanup_validates_keep_days(): void
+    {
+        $command = new \App\Console\Commands\BackupMongoDBCommand;
+
+        $method = new \ReflectionMethod($command, 'cleanup');
+        $output = new \Symfony\Component\Console\Output\BufferedOutput;
+        $command->setOutput(new \Illuminate\Console\OutputStyle(
+            new \Symfony\Component\Console\Input\ArrayInput([]),
+            $output,
+        ));
+
+        $method->invoke($command, 0);
+
+        $this->assertStringContainsString('mínimo 1', $output->fetch());
+    }
+
+    public function test_pgsql_cleanup_validates_keep_days(): void
+    {
+        $command = new \App\Console\Commands\BackupPostgreSQLCommand;
+
+        $method = new \ReflectionMethod($command, 'cleanup');
+        $output = new \Symfony\Component\Console\Output\BufferedOutput;
+        $command->setOutput(new \Illuminate\Console\OutputStyle(
+            new \Symfony\Component\Console\Input\ArrayInput([]),
+            $output,
+        ));
+
+        $method->invoke($command, 0);
+
+        $this->assertStringContainsString('mínimo 1', $output->fetch());
     }
 }
