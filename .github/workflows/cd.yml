@@ -60,7 +60,7 @@ jobs:
               continue
             fi
 
-            CONCLUSIONS=$(echo "$RESULT" | jq '[.[] | .conclusion] | unique')
+            CONCLUSIONS=$(echo "$RESULT" | jq -c '[.[] | .conclusion] | unique')
             echo "Check conclusions: $CONCLUSIONS"
 
             if [ "$CONCLUSIONS" = '["success"]' ]; then
