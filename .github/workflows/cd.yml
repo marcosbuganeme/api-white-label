@@ -158,14 +158,20 @@ jobs:
     environment: production
 
     steps:
-      - name: Login to GHCR on server
-        uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
-        with:
-          host: ${{ secrets.DEPLOY_HOST }}
-          username: ${{ secrets.DEPLOY_USER }}
-          key: ${{ secrets.DEPLOY_SSH_KEY }}
-          script: |
-            echo '${{ secrets.GHCR_TOKEN }}' | docker login ghcr.io -u '${{ secrets.GHCR_USER }}' --password-stdin
+      - name: Debug SSH key format
+        env:
+          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          echo "Key byte count: $(echo "$KEY" | wc -c)"
+          echo "Key line count: $(echo "$KEY" | wc -l)"
+          echo "First 35 chars: $(echo "$KEY" | head -c 35)"
+          echo "Last 35 chars: $(echo "$KEY" | tail -c 36)"
+          echo "$KEY" > /tmp/testkey
+          file /tmp/testkey
+          head -1 /tmp/testkey
+          tail -1 /tmp/testkey
+          ssh-keygen -l -f /tmp/testkey 2>&1 || echo "ssh-keygen failed"
+          rm -f /tmp/testkey
 
       - name: Deploy via SSH
         uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
@@ -174,7 +180,9 @@ jobs:
           username: ${{ secrets.DEPLOY_USER }}
           key: ${{ secrets.DEPLOY_SSH_KEY }}
           command_timeout: 10m
-          script: /opt/maisvendas/scripts/deploy.sh
+          script: |
+            echo '${{ secrets.GHCR_TOKEN }}' | docker login ghcr.io -u '${{ secrets.GHCR_USER }}' --password-stdin
+            /opt/maisvendas/scripts/deploy.sh
 
       - name: Verify deployment
         uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
