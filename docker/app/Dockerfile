@@ -35,6 +35,7 @@ RUN curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc \
     librabbitmq-dev \
     libfcgi-bin \
     pkg-config \
+    procps \
     gosu \
     && rm -rf /var/lib/apt/lists/*
 
@@ -81,7 +82,6 @@ FROM base AS development
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     git \
-    procps \
     postgresql-client-17 \
     mongodb-database-tools \
     && rm -rf /var/lib/apt/lists/*

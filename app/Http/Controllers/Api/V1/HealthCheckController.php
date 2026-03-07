@@ -92,7 +92,7 @@ class HealthCheckController extends Controller
             /** @var \MongoDB\Laravel\Connection $connection */
             $connection = DB::connection('mongodb');
 
-            $connection->getMongoDB()->command(['ping' => 1]);
+            $connection->getDatabase()->command(['ping' => 1]);
 
             return ['status' => 'up'];
         } catch (\Throwable $e) {
