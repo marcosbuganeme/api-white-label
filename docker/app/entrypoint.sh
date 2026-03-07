@@ -53,7 +53,13 @@ if [ "$(id -u)" = "0" ]; then
         esac
     fi
 
-    exec gosu appuser "$@"
+    # PHP-FPM master process needs root for /proc/self/fd/2 (stderr) access.
+    # Workers run as appuser via pool config (user/group directive).
+    if [ "${CONTAINER_ROLE:-app}" = "app" ]; then
+        exec "$@"
+    else
+        exec gosu appuser "$@"
+    fi
 fi
 
 # Running as non-root (development) - run caching directly

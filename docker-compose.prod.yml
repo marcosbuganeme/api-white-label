@@ -168,6 +168,8 @@ services:
         --save 3600 1
         --save 300 10
         --requirepass ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
     deploy:
       resources:
         limits:
