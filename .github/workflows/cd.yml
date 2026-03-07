@@ -158,15 +158,15 @@ jobs:
     environment: production
 
     steps:
-      - name: Setup SSH agent
-        uses: webfactory/ssh-agent@a6f90b1f127823b31d4d4a8d96047790581349bd # v0.9.1
-        with:
-          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
-
-      - name: Add server to known hosts
+      - name: Setup SSH
         env:
+          SSH_KEY_B64: ${{ secrets.DEPLOY_SSH_KEY }}
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
-        run: ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s' "$SSH_KEY_B64" | base64 -d > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
 
       - name: Deploy via SSH
         env:
@@ -175,12 +175,14 @@ jobs:
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
           GHCR_USER: ${{ secrets.GHCR_USER }}
         run: |
+          SSH_CMD="ssh -i ~/.ssh/deploy_key"
+
           # Login to GHCR on remote server
-          ssh "${DEPLOY_USER}@${DEPLOY_HOST}" \
+          $SSH_CMD "${DEPLOY_USER}@${DEPLOY_HOST}" \
             "echo '${GHCR_TOKEN}' | docker login ghcr.io -u '${GHCR_USER}' --password-stdin"
 
           # Run deploy script
-          ssh "${DEPLOY_USER}@${DEPLOY_HOST}" \
+          $SSH_CMD "${DEPLOY_USER}@${DEPLOY_HOST}" \
             "/opt/maisvendas/scripts/deploy.sh"
 
       - name: Verify deployment
@@ -188,5 +190,7 @@ jobs:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
-          ssh "${DEPLOY_USER}@${DEPLOY_HOST}" \
+          ssh -i ~/.ssh/deploy_key "${DEPLOY_USER}@${DEPLOY_HOST}" \
             "cd /opt/maisvendas && docker compose ps --format 'table {{.Name}}\t{{.Status}}'"
+
+          rm -f ~/.ssh/deploy_key
