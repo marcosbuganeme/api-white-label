@@ -30,49 +30,49 @@ jobs:
           COMMIT_SHA: ${{ github.sha }}
           REPO: ${{ github.repository }}
         run: |
-          echo "Waiting for CI checks to complete for $COMMIT_SHA..."
+          echo "Waiting for CI checks on $COMMIT_SHA..."
+          CI_JOBS='["Code Style (Pint)","Static Analysis (PHPStan)","Tests","Security Audit"]'
 
-          # Retry up to 90 times (15 min) waiting for checks to finish
           for i in $(seq 1 90); do
             RESULT=$(gh api "repos/$REPO/commits/$COMMIT_SHA/check-runs" \
-              --jq '.check_runs | map(select(.name != "CI Gate"))' 2>&1) || {
-              echo "::warning::gh api call failed: $RESULT"
+              --jq "[.check_runs[] | select(.name as \$n | $CI_JOBS | index(\$n))]" 2>&1) || {
+              echo "::warning::API call failed, retrying..."
               sleep 10
               continue
             }
 
-            TOTAL=$(echo "$RESULT" | jq 'length')
-            if [ "$TOTAL" -eq 0 ]; then
+            FOUND=$(echo "$RESULT" | jq 'length')
+            if [ "$FOUND" -lt 4 ]; then
               if [ "$i" -gt 24 ]; then
-                echo "::error::No CI checks found for commit $COMMIT_SHA after $i attempts."
-                echo "::error::Ensure CI ran on this commit before creating a release tag."
+                echo "::error::Only $FOUND/4 CI checks found after $i attempts."
                 exit 1
               fi
-              echo "Attempt $i/90: no CI checks found yet, waiting 10s..."
+              echo "Attempt $i/90: $FOUND/4 CI checks found, waiting 10s..."
               sleep 10
               continue
             fi
 
             PENDING=$(echo "$RESULT" | jq '[.[] | select(.status != "completed")] | length')
             if [ "$PENDING" -gt 0 ]; then
-              echo "Attempt $i/90: $PENDING check(s) still running, waiting 10s..."
+              echo "Attempt $i/90: $PENDING check(s) still running..."
               sleep 10
               continue
             fi
 
             CONCLUSIONS=$(echo "$RESULT" | jq -c '[.[] | .conclusion] | unique')
-            echo "Check conclusions: $CONCLUSIONS"
+            echo "CI check conclusions: $CONCLUSIONS"
 
             if [ "$CONCLUSIONS" = '["success"]' ]; then
-              echo "All CI checks passed."
+              echo "All 4 CI checks passed!"
               exit 0
             else
-              echo "::error::CI checks did not all pass: $CONCLUSIONS"
+              echo "::error::CI checks failed: $CONCLUSIONS"
+              echo "$RESULT" | jq -c '.[] | {name, conclusion}'
               exit 1
             fi
           done
 
-          echo "::error::Timed out waiting for CI checks to complete"
+          echo "::error::Timed out waiting for CI checks"
           exit 1
 
   build-and-push:
@@ -158,21 +158,6 @@ jobs:
     environment: production
 
     steps:
-      - name: Debug SSH key format
-        env:
-          KEY: ${{ secrets.DEPLOY_SSH_KEY }}
-        run: |
-          echo "Key byte count: $(echo "$KEY" | wc -c)"
-          echo "Key line count: $(echo "$KEY" | wc -l)"
-          echo "First 35 chars: $(echo "$KEY" | head -c 35)"
-          echo "Last 35 chars: $(echo "$KEY" | tail -c 36)"
-          echo "$KEY" > /tmp/testkey
-          file /tmp/testkey
-          head -1 /tmp/testkey
-          tail -1 /tmp/testkey
-          ssh-keygen -l -f /tmp/testkey 2>&1 || echo "ssh-keygen failed"
-          rm -f /tmp/testkey
-
       - name: Deploy via SSH
         uses: appleboy/ssh-action@029f5b4aeeeb58fdfe1410a5d17f967dacf36262 # v1.0.3
         with:
