@@ -150,17 +150,51 @@ jobs:
           provenance: true
           sbom: true
 
-  # TODO: Configure deployment targets when infrastructure is ready.
-  # deploy-staging:
-  #   name: Deploy to Staging
-  #   needs: build-and-push
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 15
-  #   environment: staging
-  #
-  # deploy-production:
-  #   name: Deploy to Production
-  #   needs: deploy-staging
-  #   runs-on: ubuntu-latest
-  #   timeout-minutes: 15
-  #   environment: production
+  deploy-production:
+    name: Deploy to Production
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+
+    steps:
+      - name: Deploy via SSH
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          GHCR_USER: ${{ secrets.GHCR_USER }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+
+          # Login to GHCR on remote server
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "echo '${GHCR_TOKEN}' | docker login ghcr.io -u '${GHCR_USER}' --password-stdin"
+
+          # Run deploy script
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "/opt/maisvendas/scripts/deploy.sh"
+
+          rm -f ~/.ssh/deploy_key
+
+      - name: Verify deployment
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+        run: |
+          mkdir -p ~/.ssh
+          echo "$DEPLOY_SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+
+          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
+            "${DEPLOY_USER}@${DEPLOY_HOST}" \
+            "cd /opt/maisvendas && docker compose ps --format 'table {{.Name}}\t{{.Status}}'"
+
+          rm -f ~/.ssh/deploy_key
