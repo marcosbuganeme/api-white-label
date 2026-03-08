@@ -119,6 +119,12 @@ FROM base AS production
 COPY docker/app/conf.d/php-prod.ini /usr/local/etc/php/conf.d/zz-prod.ini
 COPY docker/app/conf.d/php-fpm-prod.conf /usr/local/etc/php-fpm.d/zz-prod.conf
 
+# Backup tools (pg_dump, mongodump) - needed by backup:pgsql and backup:mongodb commands
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    postgresql-client-17 \
+    mongodb-database-tools \
+    && rm -rf /var/lib/apt/lists/*
+
 # Layer caching: copy dependency files first
 COPY composer.json composer.lock ./
 RUN composer install --no-dev --no-interaction --optimize-autoloader --no-scripts
