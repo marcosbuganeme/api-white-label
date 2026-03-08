@@ -10,6 +10,17 @@
 
 services:
   # ──────────────────────────────────────────────
+  # DOCKER SOCKET PROXY - Limits Docker API access for Traefik
+  # ──────────────────────────────────────────────
+  docker-socket-proxy:
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 32M
+          cpus: '0.05'
+
+  # ──────────────────────────────────────────────
   # EDGE PROXY - Traefik
   # ──────────────────────────────────────────────
   traefik:
@@ -33,6 +44,11 @@ services:
       - no-new-privileges:true
     # Public assets are baked into the nginx image (COPY public) - no volume needed.
     # This prevents stale assets from persisting across deploys via named volumes.
+    labels:
+      # Traefik health-aware routing: only send traffic when backend is healthy
+      - "traefik.http.services.api.loadbalancer.healthCheck.path=/v1/health/live"
+      - "traefik.http.services.api.loadbalancer.healthCheck.interval=5s"
+      - "traefik.http.services.api.loadbalancer.healthCheck.timeout=3s"
     deploy:
       resources:
         limits:
@@ -71,6 +87,7 @@ services:
       APP_ENV: production
     volumes:
       - app_storage:/var/www/html/storage
+    stop_grace_period: 30s
     deploy:
       resources:
         limits:
@@ -99,6 +116,7 @@ services:
       APP_ENV: production
     volumes:
       - app_storage:/var/www/html/storage
+    stop_grace_period: 60s
     deploy:
       resources:
         limits:
@@ -118,6 +136,7 @@ services:
       APP_ENV: production
     volumes:
       - app_storage:/var/www/html/storage
+    stop_grace_period: 15s
     deploy:
       resources:
         limits:

@@ -1,5 +1,6 @@
 <?php
 
+use Monolog\Formatter\JsonFormatter;
 use Monolog\Handler\NullHandler;
 use Monolog\Handler\StreamHandler;
 use Monolog\Processor\PsrLogMessageProcessor;
@@ -17,7 +18,7 @@ return [
 
         'stack' => [
             'driver' => 'stack',
-            'channels' => array_map('trim', explode(',', (string) env('LOG_STACK', 'daily,mongodb'))),
+            'channels' => array_map('trim', explode(',', (string) env('LOG_STACK', 'stderr,mongodb'))),
             'ignore_exceptions' => false,
         ],
 
@@ -50,7 +51,7 @@ return [
             'handler_with' => [
                 'stream' => 'php://stderr',
             ],
-            'formatter' => env('LOG_STDERR_FORMATTER'),
+            'formatter' => env('LOG_STDERR_FORMATTER', JsonFormatter::class),
             'processors' => [PsrLogMessageProcessor::class],
         ],
 

@@ -177,10 +177,10 @@ jobs:
         run: |
           SSH="ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST}"
 
-          # Login to GHCR on server
+          # Login to GHCR on server (idempotent - safe to re-run)
           $SSH "echo '${GHCR_TOKEN}' | docker login ghcr.io -u '${GHCR_USER}' --password-stdin"
 
-          # Deploy
+          # Idempotent deploy with rollback on failure
           $SSH "/opt/maisvendas/scripts/deploy.sh"
 
       - name: Verify deployment
@@ -188,7 +188,22 @@ jobs:
           DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
           DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
         run: |
-          ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no \
-            "${DEPLOY_USER}@${DEPLOY_HOST}" \
-            "cd /opt/maisvendas && docker compose ps --format 'table {{.Name}}\t{{.Status}}'"
+          SSH="ssh -i ~/.ssh/deploy_key -o StrictHostKeyChecking=no ${DEPLOY_USER}@${DEPLOY_HOST}"
+
+          echo "=== Container Status ==="
+          $SSH "cd /opt/maisvendas && docker compose ps --format 'table {{.Name}}\t{{.Status}}'"
+
+          echo "=== Health Check ==="
+          for i in $(seq 1 12); do
+            STATUS=$($SSH "curl -sf http://localhost/v1/health | jq -r '.status' 2>/dev/null" || echo "unreachable")
+            if [ "$STATUS" = "healthy" ]; then
+              echo "Health check passed: $STATUS"
+              rm -f ~/.ssh/deploy_key
+              exit 0
+            fi
+            echo "Attempt $i/12: status=$STATUS, retrying in 5s..."
+            sleep 5
+          done
+
+          echo "::warning::Health check did not return healthy after 60s"
           rm -f ~/.ssh/deploy_key

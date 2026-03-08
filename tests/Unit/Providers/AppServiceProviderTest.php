@@ -27,7 +27,7 @@ class AppServiceProviderTest extends TestCase
 
     public function test_api_rate_limiter_returns_limit_for_guest(): void
     {
-        $request = Request::create('/api/health');
+        $request = Request::create('/v1/health');
         $limiter = RateLimiter::limiter('api');
         $this->assertNotNull($limiter);
 
@@ -38,7 +38,7 @@ class AppServiceProviderTest extends TestCase
 
     public function test_health_rate_limiter_returns_limit(): void
     {
-        $request = Request::create('/api/health');
+        $request = Request::create('/v1/health');
         $limiter = RateLimiter::limiter('health');
         $this->assertNotNull($limiter);
 

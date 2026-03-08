@@ -1,6 +1,11 @@
-FROM php:8.5.3-fpm-bookworm AS base
+FROM php:8.5.3-fpm-bookworm@sha256:ad188f9cf56df666090845cab4b7df74bb401c326b77c0eac52efdab5fa75bed AS base
 
-LABEL maintainer="MaisVendas <dev@maisvendas.com>"
+LABEL maintainer="MaisVendas <dev@maisvenda.store>" \
+      org.opencontainers.image.title="API MaisVendas" \
+      org.opencontainers.image.description="Whitelabel SaaS API - PHP-FPM Application" \
+      org.opencontainers.image.vendor="MaisVendas" \
+      org.opencontainers.image.source="https://github.com/marcosbuganeme/api-maisvendas" \
+      org.opencontainers.image.licenses="Proprietary"
 
 ARG WWWGROUP=1000
 ARG WWWUSER=1000
@@ -64,7 +69,7 @@ RUN pecl install redis-6.3.0 mongodb-2.2.1 amqp-2.2.0 \
     && docker-php-ext-enable redis mongodb amqp
 
 # Composer
-COPY --from=composer:2.9.5 /usr/bin/composer /usr/bin/composer
+COPY --from=composer:2.9.5@sha256:f0809732b2188154b3faa8e44ab900595acb0b09cd0aa6c34e798efe4ebc9021 /usr/bin/composer /usr/bin/composer
 
 # Create app user
 RUN groupadd --force -g $WWWGROUP appuser \
@@ -121,6 +126,13 @@ RUN composer install --no-dev --no-interaction --optimize-autoloader --no-script
 COPY --chown=appuser:appuser . /var/www/html
 RUN composer run-script post-autoload-dump \
     && chmod -R 775 /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Bake Laravel caches into the image (immutable containers principle).
+# config:cache and route:cache depend on env vars, but Laravel reads .env at build
+# time only for structure - runtime values come from actual env vars via entrypoint.
+# event:cache and view:cache are purely code-derived and safe to bake.
+RUN php artisan event:cache \
+    && php artisan view:cache
 
 # Entrypoint: runs as root, fixes ownership, drops to appuser via gosu
 COPY docker/app/entrypoint.sh /usr/local/bin/entrypoint.sh

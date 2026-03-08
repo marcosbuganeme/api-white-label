@@ -11,7 +11,31 @@ use Illuminate\Support\Facades\Storage;
 
 class HealthCheckController extends Controller
 {
+    /**
+     * Full health check (backward-compatible: checks all services).
+     */
     public function __invoke(): JsonResponse
+    {
+        return $this->ready();
+    }
+
+    /**
+     * Liveness probe: is the application process alive and able to serve requests?
+     * Does NOT check external dependencies. Used by orchestrators to decide restarts.
+     */
+    public function live(): JsonResponse
+    {
+        return response()->json([
+            'status' => 'alive',
+            'timestamp' => now()->toIso8601String(),
+        ]);
+    }
+
+    /**
+     * Readiness probe: is the application ready to accept traffic?
+     * Checks all external dependencies. Used by load balancers for routing decisions.
+     */
+    public function ready(): JsonResponse
     {
         $checks = [
             'app' => $this->checkApp(),
@@ -30,8 +54,6 @@ class HealthCheckController extends Controller
             'timestamp' => now()->toIso8601String(),
         ];
 
-        // Only expose service details in local environment.
-        // In production/staging/testing, the status alone prevents infrastructure topology leakage.
         if (app()->environment('local')) {
             $response['services'] = $checks;
         }

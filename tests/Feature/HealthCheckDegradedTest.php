@@ -24,7 +24,7 @@ class HealthCheckDegradedTest extends TestCase
         config(['database.connections.pgsql.port' => 1]);
         \Illuminate\Support\Facades\DB::purge('pgsql');
 
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
 
         $response->assertStatus(503)
             ->assertJsonPath('status', 'degraded')
@@ -33,7 +33,7 @@ class HealthCheckDegradedTest extends TestCase
 
     public function test_returns_200_when_healthy(): void
     {
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
 
         $response->assertJsonStructure(['status', 'timestamp']);
         $this->assertContains($response->json('status'), ['healthy', 'degraded']);
@@ -41,7 +41,7 @@ class HealthCheckDegradedTest extends TestCase
 
     public function test_timestamp_is_iso8601_format(): void
     {
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
 
         $timestamp = $response->json('timestamp');
         $this->assertIsString($timestamp);
@@ -60,7 +60,7 @@ class HealthCheckDegradedTest extends TestCase
         config(['database.connections.pgsql.port' => 1]);
         \Illuminate\Support\Facades\DB::purge('pgsql');
 
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
 
         $response->assertJsonStructure([
             'status',
@@ -85,7 +85,7 @@ class HealthCheckDegradedTest extends TestCase
         config(['database.connections.pgsql.port' => 1]);
         \Illuminate\Support\Facades\DB::purge('pgsql');
 
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
 
         // App should still be up even if database is down
         $response->assertJsonPath('services.app.status', 'up');

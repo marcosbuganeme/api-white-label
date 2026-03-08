@@ -40,7 +40,7 @@ class HealthCheckServiceTest extends TestCase
 
     public function test_redis_up_when_cache_works(): void
     {
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
         $response->assertJsonPath('services.redis.status', 'up');
     }
 
@@ -59,7 +59,7 @@ class HealthCheckServiceTest extends TestCase
 
         // Disable all throttle middleware since it also uses Redis
         $response = $this->withoutMiddleware()
-            ->getJson('/api/health');
+            ->getJson('/v1/health');
         $response->assertJsonPath('services.redis.status', 'down');
     }
 
@@ -70,7 +70,7 @@ class HealthCheckServiceTest extends TestCase
         // Non-production uses 'local' disk
         Cache::forget('health:storage');
 
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
         $response->assertJsonPath('services.storage.status', 'up');
         $response->assertJsonPath('services.storage.disk', 'local');
     }
@@ -82,7 +82,7 @@ class HealthCheckServiceTest extends TestCase
         // Force recalculation
         Cache::forget('health:storage');
 
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
 
         // In production, no services are shown (only status)
         $response->assertJsonMissingPath('services');
@@ -93,10 +93,10 @@ class HealthCheckServiceTest extends TestCase
         Cache::forget('health:storage');
 
         // First call sets cache
-        $this->getJson('/api/health');
+        $this->getJson('/v1/health');
 
         // Second call uses cached result
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
         $response->assertJsonPath('services.storage.status', 'up');
     }
 
@@ -106,7 +106,7 @@ class HealthCheckServiceTest extends TestCase
     {
         Cache::put('health:rabbitmq', ['status' => 'up'], 10);
 
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
         $response->assertJsonPath('services.rabbitmq.status', 'up');
     }
 
@@ -118,7 +118,7 @@ class HealthCheckServiceTest extends TestCase
         config(['queue.connections.rabbitmq.hosts.0.host' => '127.0.0.254']);
         config(['queue.connections.rabbitmq.hosts.0.port' => 1]);
 
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
         $response->assertJsonPath('services.rabbitmq.status', 'down');
     }
 
@@ -129,7 +129,7 @@ class HealthCheckServiceTest extends TestCase
         config(['database.connections.mongodb.dsn' => 'mongodb://127.0.0.254:1/test']);
         \Illuminate\Support\Facades\DB::purge('mongodb');
 
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
         $response->assertJsonPath('services.mongodb.status', 'down');
     }
 
@@ -137,7 +137,7 @@ class HealthCheckServiceTest extends TestCase
 
     public function test_app_shows_version_info_in_local(): void
     {
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
 
         $response->assertJsonPath('services.app.status', 'up');
         $response->assertJsonStructure([
@@ -151,7 +151,7 @@ class HealthCheckServiceTest extends TestCase
     {
         $this->app['env'] = 'production';
 
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
 
         // Production hides all services
         $response->assertJsonMissingPath('services');
@@ -168,7 +168,7 @@ class HealthCheckServiceTest extends TestCase
             ->with('local')
             ->andThrow(new \RuntimeException('Disk unavailable'));
 
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
         $response->assertJsonPath('services.storage.status', 'down');
         $response->assertJsonPath('services.storage.disk', 'local');
     }
@@ -185,7 +185,7 @@ class HealthCheckServiceTest extends TestCase
         // to force the catch block → probeRabbitMQ() fallback path
         Cache::forget('health:rabbitmq');
 
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
         $response->assertJsonPath('services.rabbitmq.status', 'down');
     }
 
@@ -196,7 +196,7 @@ class HealthCheckServiceTest extends TestCase
         // Seed cache with up status (simulating a recent successful probe)
         Cache::put('health:rabbitmq', ['status' => 'up'], 10);
 
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
         $response->assertJsonPath('services.rabbitmq.status', 'up');
 
         // Verify the cache was used (still present)
@@ -230,7 +230,7 @@ class HealthCheckServiceTest extends TestCase
                 ], 200));
         });
 
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
 
         $response->assertStatus(200)
             ->assertJsonPath('status', 'healthy');
@@ -243,7 +243,7 @@ class HealthCheckServiceTest extends TestCase
         config(['database.connections.pgsql.port' => 1]);
         \Illuminate\Support\Facades\DB::purge('pgsql');
 
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
 
         $response->assertStatus(503)
             ->assertJsonPath('status', 'degraded');

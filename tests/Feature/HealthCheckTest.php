@@ -17,7 +17,7 @@ class HealthCheckTest extends TestCase
 
     public function test_health_check_returns_json_with_status(): void
     {
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
 
         $response->assertHeader('content-type', 'application/json')
             ->assertJsonStructure(['status', 'timestamp']);
@@ -39,7 +39,7 @@ class HealthCheckTest extends TestCase
     {
         $this->app['env'] = 'local';
 
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
 
         $response->assertJsonPath('services.app.status', 'up');
         $response->assertJsonStructure([
@@ -58,7 +58,7 @@ class HealthCheckTest extends TestCase
     {
         $this->app['env'] = 'testing';
 
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
 
         $response->assertJsonMissingPath('services');
         $response->assertJsonStructure(['status', 'timestamp']);
@@ -68,7 +68,7 @@ class HealthCheckTest extends TestCase
     {
         $this->app['env'] = 'production';
 
-        $response = $this->getJson('/api/health');
+        $response = $this->getJson('/v1/health');
 
         $response->assertJsonMissingPath('services');
         $response->assertJsonStructure(['status', 'timestamp']);
@@ -83,7 +83,7 @@ class HealthCheckTest extends TestCase
 
     public function test_api_routes_require_json_accept_header(): void
     {
-        $response = $this->get('/api/health');
+        $response = $this->get('/v1/health');
 
         $response->assertHeader('content-type', 'application/json');
     }
