@@ -16,7 +16,9 @@ set -euo pipefail
 
 APP_DIR="/opt/maisvendas"
 COMPOSE="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
+APP_DOMAIN=$(grep -oP '^APP_DOMAIN=\K.*' "$APP_DIR/.env" 2>/dev/null || echo "api.maisvenda.store")
 HEALTH_URL="http://localhost/v1/health"
+HEALTH_HEADER="Host: $APP_DOMAIN"
 MAX_HEALTH_RETRIES=30
 HEALTH_INTERVAL=2
 
@@ -79,7 +81,7 @@ $COMPOSE up -d --no-deps nginx 2>&1 | grep -v "^$" || true
 # ─── Health check via HTTP ────────────────────────────────────
 log "Verifying deployment via health endpoint..."
 for i in $(seq 1 "$MAX_HEALTH_RETRIES"); do
-    RESPONSE=$(curl -sf "$HEALTH_URL" 2>/dev/null || echo '{"status":"unreachable"}')
+    RESPONSE=$(curl -sf -H "$HEALTH_HEADER" "$HEALTH_URL" 2>/dev/null || echo '{"status":"unreachable"}')
     STATUS=$(echo "$RESPONSE" | jq -r '.status' 2>/dev/null || echo "parse_error")
 
     if [ "$STATUS" = "healthy" ]; then

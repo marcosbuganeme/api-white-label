@@ -38,7 +38,9 @@ class AppServiceProvider extends ServiceProvider
             once(fn () => Log::warning('CORS_ALLOWED_ORIGINS não configurado. Requisições cross-origin de browsers serão rejeitadas.'));
         }
 
-        if ($this->app->isProduction() && ! in_array(config('database.connections.pgsql.sslmode'), ['require', 'verify-ca', 'verify-full'], true)) {
+        $dbHost = config('database.connections.pgsql.host');
+        $isExternalDb = ! in_array($dbHost, ['postgres', 'localhost', '127.0.0.1'], true);
+        if ($this->app->isProduction() && $isExternalDb && ! in_array(config('database.connections.pgsql.sslmode'), ['require', 'verify-ca', 'verify-full'], true)) {
             once(fn () => Log::warning('DB_SSLMODE inseguro em produção. Recomendado: require, verify-ca ou verify-full.'));
         }
     }

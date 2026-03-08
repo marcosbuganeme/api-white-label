@@ -194,8 +194,9 @@ jobs:
           $SSH "cd /opt/maisvendas && docker compose ps --format 'table {{.Name}}\t{{.Status}}'"
 
           echo "=== Health Check ==="
+          DOMAIN=$($SSH "grep -oP '^APP_DOMAIN=\K.*' /opt/maisvendas/.env" || echo "api.maisvenda.store")
           for i in $(seq 1 12); do
-            STATUS=$($SSH "curl -sf http://localhost/v1/health | jq -r '.status' 2>/dev/null" || echo "unreachable")
+            STATUS=$($SSH "curl -sf -H 'Host: ${DOMAIN}' http://localhost/v1/health | jq -r '.status' 2>/dev/null" || echo "unreachable")
             if [ "$STATUS" = "healthy" ]; then
               echo "Health check passed: $STATUS"
               rm -f ~/.ssh/deploy_key
