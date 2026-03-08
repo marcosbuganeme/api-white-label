@@ -45,7 +45,7 @@ $COMPOSE run --rm --no-deps app php artisan migrate --force --no-interaction 2>/
 
 # ─── Restart infrastructure services (if image changed) ──────
 log "Updating infrastructure services..."
-$COMPOSE up -d --no-deps --remove-orphans docker-socket-proxy traefik 2>&1 | grep -v "^$" || true
+$COMPOSE up -d --no-deps --remove-orphans docker-socket-proxy traefik alloy 2>&1 | grep -v "^$" || true
 
 # ─── Restart workers (they'll pick up new code) ──────────────
 log "Updating worker services..."

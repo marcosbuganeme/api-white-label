@@ -396,6 +396,40 @@ services:
       - "traefik.http.routers.rabbitmq-secure.tls.certresolver=letsencrypt"
       - "traefik.http.routers.rabbitmq-secure.middlewares=rabbitmq-auth"
 
+  # ──────────────────────────────────────────────
+  # ALLOY - Grafana Observability Agent (metrics + logs)
+  # ──────────────────────────────────────────────
+  alloy:
+    image: grafana/alloy:v1.9.0
+    container_name: maisvendas-alloy
+    restart: unless-stopped
+    security_opt:
+      - no-new-privileges:true
+    volumes:
+      - ./docker/alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    depends_on:
+      nginx:
+        condition: service_started
+    networks:
+      - maisvendas
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+      GRAFANA_CLOUD_PROMETHEUS_URL: ${GRAFANA_CLOUD_PROMETHEUS_URL:-http://localhost:9090/api/v1/write}
+      GRAFANA_CLOUD_LOKI_URL: ${GRAFANA_CLOUD_LOKI_URL:-http://localhost:3100/loki/api/v1/push}
+      GRAFANA_CLOUD_USER: ${GRAFANA_CLOUD_USER:-}
+      GRAFANA_CLOUD_TOKEN: ${GRAFANA_CLOUD_TOKEN:-}
+    command:
+      - run
+      - /etc/alloy/config.alloy
+      - --stability.level=generally-available
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:12345/-/healthy || exit 1"]
+      interval: 30s
+      timeout: 5s
+      start_period: 15s
+      retries: 3
+
 volumes:
   postgres_data:
     driver: local

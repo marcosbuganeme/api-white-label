@@ -5,7 +5,7 @@
 #   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 #   make prod-up
 #
-# Otimizado para: 4GB RAM / 2 vCPU (budget total: ~2,880M / 3.0 CPU)
+# Otimizado para: 4GB RAM / 2 vCPU (budget total: ~2,944M / 3.1 CPU)
 ###############################################################################
 
 services:
@@ -25,8 +25,6 @@ services:
   # ──────────────────────────────────────────────
   traefik:
     restart: always
-    security_opt:
-      - no-new-privileges:true
     volumes:
       - ./docker/traefik/traefik.prod.yml:/etc/traefik/traefik.yml:ro
     deploy:
@@ -40,8 +38,6 @@ services:
   # ──────────────────────────────────────────────
   nginx:
     restart: always
-    security_opt:
-      - no-new-privileges:true
     # Public assets are baked into the nginx image (COPY public) - no volume needed.
     # This prevents stale assets from persisting across deploys via named volumes.
     labels:
@@ -60,8 +56,6 @@ services:
   # ──────────────────────────────────────────────
   app:
     restart: always
-    security_opt:
-      - no-new-privileges:true
     build:
       target: production
     environment:
@@ -79,8 +73,6 @@ services:
   # ──────────────────────────────────────────────
   horizon:
     restart: always
-    security_opt:
-      - no-new-privileges:true
     build:
       target: production
     environment:
@@ -99,8 +91,6 @@ services:
   # ──────────────────────────────────────────────
   rabbitmq-worker:
     restart: always
-    security_opt:
-      - no-new-privileges:true
     build:
       target: production
     command: >
@@ -128,8 +118,6 @@ services:
   # ──────────────────────────────────────────────
   scheduler:
     restart: always
-    security_opt:
-      - no-new-privileges:true
     build:
       target: production
     environment:
@@ -148,8 +136,6 @@ services:
   # ──────────────────────────────────────────────
   postgres:
     restart: always
-    security_opt:
-      - no-new-privileges:true
     ports: !reset []
     command: >
       postgres
@@ -173,8 +159,6 @@ services:
   # ──────────────────────────────────────────────
   redis:
     restart: always
-    security_opt:
-      - no-new-privileges:true
     ports: !reset []
     command: >
       redis-server
@@ -200,8 +184,6 @@ services:
   # ──────────────────────────────────────────────
   mongodb:
     restart: always
-    security_opt:
-      - no-new-privileges:true
     ports: !reset []
     command: >
       mongod
@@ -219,14 +201,23 @@ services:
   # ──────────────────────────────────────────────
   rabbitmq:
     restart: always
-    security_opt:
-      - no-new-privileges:true
     ports: !reset []
     deploy:
       resources:
         limits:
           memory: 384M
           cpus: '0.25'
+
+  # ──────────────────────────────────────────────
+  # ALLOY - Grafana Observability Agent
+  # ──────────────────────────────────────────────
+  alloy:
+    restart: always
+    deploy:
+      resources:
+        limits:
+          memory: 64M
+          cpus: '0.10'
 
 volumes:
   app_storage:

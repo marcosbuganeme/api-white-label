@@ -1,0 +1,123 @@
+///////////////////////////////////////////////////////////////////////////////
+// Grafana Alloy Configuration - API MaisVendas
+//
+// Unified observability agent: metrics (Prometheus) + logs (Loki)
+// Docs: https://grafana.com/docs/alloy/latest/
+///////////////////////////////////////////////////////////////////////////////
+
+// ─── Prometheus: Scrape /v1/metrics ─────────────────────────────────────────
+
+prometheus.scrape "app_metrics" {
+  targets = [{
+    __address__ = "nginx:80",
+    job         = "maisvendas-app",
+    instance    = env("HOSTNAME"),
+  }]
+
+  metrics_path    = "/v1/metrics"
+  scrape_interval = "30s"
+  scrape_timeout  = "10s"
+
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+}
+
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    url = env("GRAFANA_CLOUD_PROMETHEUS_URL")
+
+    basic_auth {
+      username = env("GRAFANA_CLOUD_USER")
+      password = env("GRAFANA_CLOUD_TOKEN")
+    }
+
+    queue_config {
+      max_samples_per_send = 1000
+      batch_send_deadline  = "5s"
+      max_shards           = 3
+    }
+  }
+}
+
+// ─── Loki: Docker container logs ────────────────────────────────────────────
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+
+  filter {
+    name   = "network"
+    values = ["maisvendas"]
+  }
+}
+
+discovery.relabel "docker_logs" {
+  targets = discovery.docker.containers.targets
+
+  // Use container name as label
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    regex         = "/(.*)"
+    target_label  = "container"
+  }
+
+  // Add service name from compose service label
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    target_label  = "service"
+  }
+
+  // Drop alloy's own logs to avoid loops
+  rule {
+    source_labels = ["__meta_docker_container_label_com_docker_compose_service"]
+    regex         = "alloy"
+    action        = "drop"
+  }
+}
+
+loki.source.docker "containers" {
+  host    = "unix:///var/run/docker.sock"
+  targets = discovery.relabel.docker_logs.output
+
+  forward_to    = [loki.process.pipeline.receiver]
+  refresh_interval = "5s"
+}
+
+loki.process "pipeline" {
+  // Try to detect JSON logs and extract level
+  stage.json {
+    expressions = {
+      level   = "level",
+      message = "message",
+      channel = "channel",
+    }
+  }
+
+  // Normalize log level label
+  stage.labels {
+    values = {
+      level   = "",
+      channel = "",
+    }
+  }
+
+  forward_to = [loki.write.grafana_cloud.receiver]
+}
+
+loki.write "grafana_cloud" {
+  endpoint {
+    url = env("GRAFANA_CLOUD_LOKI_URL")
+
+    basic_auth {
+      username = env("GRAFANA_CLOUD_USER")
+      password = env("GRAFANA_CLOUD_TOKEN")
+    }
+
+    // Batch settings for low-traffic environments
+    batch_wait    = "5s"
+    batch_size    = 1048576
+  }
+
+  external_labels = {
+    environment = env("APP_ENV"),
+    project     = "maisvendas",
+  }
+}
