@@ -1,4 +1,4 @@
-FROM php:8.5.3-fpm-bookworm@sha256:ad188f9cf56df666090845cab4b7df74bb401c326b77c0eac52efdab5fa75bed AS base
+FROM php:8.5.4-fpm-bookworm@sha256:a9ae740992a4bd7df0b56482874a35ebb117e218e6436b7c9cf0fbcf63867e52 AS base
 
 LABEL maintainer="MaisVendas <dev@maisvenda.store>" \
       org.opencontainers.image.title="API MaisVendas" \
